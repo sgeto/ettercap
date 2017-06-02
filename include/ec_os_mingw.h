@@ -47,12 +47,14 @@
         };
 #endif
 
+#ifndef _TIMEZONE_DEFINED
 #if !defined(HAVE_STRUCT_TIMEZONE)
    #define HAVE_STRUCT_TIMEZONE
    struct timezone {
           int tz_minuteswest;     /* minutes west of Greenwich */
           int tz_dsttime;         /* type of dst correction */
         };
+#endif
 #endif
 
 #undef  _U_
