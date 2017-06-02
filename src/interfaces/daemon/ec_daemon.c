@@ -31,6 +31,13 @@
 #include <fcntl.h>
 #include <signal.h>
 
+#ifdef OS_MINGW
+#define SIGTTOU 22 // or 27?
+#define SIGTTIN 21 // or 26?
+#define SIGTSTP 18 // or 24 or 8?
+#define SIGHUP 1 // or 5?
+#endif
+
 /* globals */
 static int fd;
 
