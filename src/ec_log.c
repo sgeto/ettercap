@@ -232,6 +232,7 @@ void log_close(struct log_fd *fd)
  */
 void reset_logfile_owners(uid_t old_uid, gid_t old_gid, uid_t new_uid, gid_t new_gid)
 {
+#if !defined(OS_WINDOWS)
    struct stat f;
    uid_t uid;
    gid_t gid;
@@ -265,6 +266,7 @@ void reset_logfile_owners(uid_t old_uid, gid_t old_gid, uid_t new_uid, gid_t new
       else
          ERROR_MSG("fstat()");
    };
+#endif
 }
 
 /* 
