@@ -177,7 +177,11 @@ CHECK_FUNCTION_EXISTS(memrchr HAVE_MEMRCHR)
 CHECK_FUNCTION_EXISTS(basename HAVE_BASENAME)
 CHECK_FUNCTION_EXISTS(strndup HAVE_STRNDUP)
 
-find_library(HAVE_PCAP pcap)
+if(WIN32)
+    find_library(HAVE_PCAP wpcap) # Should this be HAVE_WPCAP instead?
+else()
+    find_library(HAVE_PCAP pcap)
+endif()
 if(HAVE_PCAP)
     set(EC_LIBETTERCAP_LIBS ${EC_LIBETTERCAP_LIBS} ${HAVE_PCAP})
 else(HAVE_PCAP)
