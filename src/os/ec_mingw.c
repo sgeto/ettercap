@@ -39,7 +39,7 @@
 
 #include <pcap.h>
 #include <Packet32.h>
-#include <ddk/NtddNdis.h>
+#include <Ntddndis.h>
 
 HANDLE pcap_getevent(pcap_t *p);
 
