@@ -5,6 +5,36 @@
 
 #if defined HAVE_STDINT_H && !defined OS_SOLARIS
 	#include <stdint.h>
+#ifdef OS_MINGW
+/* 
+ * taken from bittypes.h
+ */
+#ifndef HAVE_U_INT8_T
+    typedef unsigned char u_int8_t;
+    typedef signed char int8_t;
+#endif
+
+#ifndef HAVE_U_INT16_T
+    typedef unsigned short u_int16_t;
+    typedef signed short int16_t;
+#endif
+
+#ifndef HAVE_U_INT32_T
+    typedef unsigned int u_int32_t;
+    typedef signed int int32_t;
+#endif
+
+#ifndef HAVE_U_INT64_T
+    #ifdef _MSC_EXTENSIONS
+    typedef unsigned _int64 u_int64_t;
+    typedef _int64 int64_t;
+#else /* _MSC_EXTENSIONS */
+    typedef unsigned long long u_int64_t;
+    typedef long long int64_t;
+#endif
+#endif
+#endif /* OS_MINGW */
+
 #elif !defined OS_SOLARIS
 	#include <sys/types.h>
 #elif defined OS_SOLARIS
