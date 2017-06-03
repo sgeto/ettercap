@@ -199,6 +199,17 @@ if(HAVE_GEOIP)
    set(WITH_GEOIP 1)
    set(EC_LIBETTERCAP_LIBS ${EC_LIBETTERCAP_LIBS} ${HAVE_GEOIP})
 endif(HAVE_GEOIP)
+
+# On Windows, we must (must) link with the Regular Expressions library "regex"
+if(WIN32)
+find_library(HAVE_REGEX regex)
+if(HAVE_REGEX)
+   set(EC_LIBETTERCAP_LIBS ${EC_LIBETTERCAP_LIBS} ${HAVE_REGEX})
+else(HAVE_REGEX)
+    message(FATAL_ERROR "Regex not found! See README.PLATFORMS for more information.")
+endif(HAVE_REGEX)
+endif(WIN32)
+
 # begin LIBNET 
 
 # This is a fake target that ettercap is dependant upon. If we end up using 
