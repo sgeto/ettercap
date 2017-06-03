@@ -1,5 +1,5 @@
 set(EC_SRC
-	ec_mem.c
+        ec_mem.c
         ec_capture.c
         ec_checksum.c
         ec_conf.c
@@ -178,7 +178,11 @@ endif(NOT HAVE_GETOPT_LONG AND NOT HAVE_GETOPT_H)
 
 add_library(lib_ettercap SHARED ${EC_SRC})
 add_dependencies(lib_ettercap libnet)
-target_link_libraries(lib_ettercap ${EC_LIBETTERCAP_LIBS})
+if(WIN32)
+    target_link_libraries(lib_ettercap ${EC_LIBETTERCAP_LIBS} ws2_32)
+else()
+    target_link_libraries(lib_ettercap ${EC_LIBETTERCAP_LIBS})
+endif()
 
 if (NOT LIBRARY_BUILD)
   add_subdirectory(interfaces)
@@ -190,7 +194,12 @@ if (NOT LIBRARY_BUILD)
     include_directories( interfaces/gtk )
   endif(ENABLE_GTK)
   add_executable(ettercap ec_parser.c ec_main.c)
-  target_link_libraries(ettercap ec_interfaces lib_ettercap ${EC_LIBS})
+  if(WIN32)
+    target_link_libraries(ettercap ec_interfaces lib_ettercap ${EC_LIBS} ws2_32)
+    target_link_libraries(ettercap "-Wl,--subsystem,windows")
+  else()
+    target_link_libraries(ettercap ec_interfaces lib_ettercap ${EC_LIBS})
+  endif()
   if(NOT DISABLE_RPATH)
     set_target_properties(ettercap PROPERTIES
     INSTALL_RPATH ${INSTALL_LIBDIR})
