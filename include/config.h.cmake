@@ -56,6 +56,8 @@
 #cmakedefine WITH_GEOIP
 #cmakedefine HAVE_EC_LUA
 
+#cmakedefine HAVE_FCHOWN
+
 #cmakedefine INSTALL_PREFIX         "@INSTALL_PREFIX@"
 #cmakedefine INSTALL_SYSCONFDIR     "@INSTALL_SYSCONFDIR@"
 #cmakedefine INSTALL_LIBDIR         "@INSTALL_LIBDIR@"
