@@ -126,7 +126,7 @@ if(ENABLE_PLUGINS)
     endif(CMAKE_DL_LIBS)
 endif(ENABLE_PLUGINS)
 
-if(HAVE_PLUGINS)
+if(HAVE_PLUGINS OR ENABLE_PLUGINS)
     # Fake target for curl
     ADD_CUSTOM_TARGET(curl)
 
@@ -152,7 +152,7 @@ if(HAVE_PLUGINS)
         message(FATAL_ERROR "Could not find Curl!")
     endif(NOT CURL_FOUND)
 
-endif(HAVE_PLUGINS)
+endif(HAVE_PLUGINS OR ENABLE_PLUGINS)
 
 CHECK_FUNCTION_EXISTS(poll HAVE_POLL)
 CHECK_FUNCTION_EXISTS(strtok_r HAVE_STRTOK_R)
