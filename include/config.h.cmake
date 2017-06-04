@@ -57,6 +57,9 @@
 #cmakedefine HAVE_EC_LUA
 
 #cmakedefine HAVE_FCHOWN
+#cmakedefine gid_t int
+#cmakedefine uid_t int
+#cmakedefine uint unsigned int
 
 #cmakedefine INSTALL_PREFIX         "@INSTALL_PREFIX@"
 #cmakedefine INSTALL_SYSCONFDIR     "@INSTALL_SYSCONFDIR@"
