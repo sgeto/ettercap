@@ -180,6 +180,8 @@ add_library(lib_ettercap SHARED ${EC_SRC})
 add_dependencies(lib_ettercap libnet)
 if(WIN32)
     target_link_libraries(lib_ettercap ${EC_LIBETTERCAP_LIBS} ws2_32)
+    # very messy I know
+    target_link_libraries(lib_ettercap "-Wl,--export-all-symbols")
 else()
     target_link_libraries(lib_ettercap ${EC_LIBETTERCAP_LIBS})
 endif()
