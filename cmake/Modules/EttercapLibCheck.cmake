@@ -231,16 +231,21 @@ if(SYSTEM_LIBNET)
 endif(SYSTEM_LIBNET)
 
 # Only go into bundled stuff if it's enabled and we haven't found it already.
-if(BUNDLED_LIBNET AND (NOT LIBNET_FOUND))
+# Bundled libnet (1.1.6) sadly doesn't build on windows. Skip it... and fail.
+if(BUNDLED_LIBNET AND (NOT LIBNET_FOUND) AND (NOT WIN32))
+#if(BUNDLED_LIBNET AND (NOT LIBNET_FOUND))
     message(STATUS "Using bundled version of LIBNET")
     add_subdirectory(bundled_deps/libnet) # EXCLUDE_FROM_ALL)
     add_dependencies(libnet bundled_libnet)
     add_dependencies(bundled bundled_libnet)
-endif(BUNDLED_LIBNET AND (NOT LIBNET_FOUND))
+endif(BUNDLED_LIBNET AND (NOT LIBNET_FOUND) AND (NOT WIN32))
 
 # Still haven't found libnet? Bail!
 if(NOT LIBNET_FOUND)
     message(FATAL_ERROR "Could not find LIBNET!")
+if(WIN32)
+    message(FATAL_ERROR "Can't use bundled libnet. See README.PLATFORMS for more information.")
+endif()
 endif(NOT LIBNET_FOUND)
 
 include_directories(${LIBNET_INCLUDE_DIR})
