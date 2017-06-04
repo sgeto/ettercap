@@ -63,9 +63,9 @@ foreach(plugin ${PLUGINS})
                     WORLD_READ WORLD_EXECUTE)
 endforeach(plugin)
 
-if (NOT HAVE_DN_EXPAND)
+if (NOT HAVE_DN_EXPAND AND (NOT WIN32))
    target_link_libraries(dns_spoof ${HAVE_RESOLV})
    target_link_libraries(mdns_spoof ${HAVE_RESOLV})
-endif (NOT HAVE_DN_EXPAND)
+endif (NOT HAVE_DN_EXPAND AND (NOT WIN32))
 
 target_link_libraries(dos_attack ${HAVE_LIBNET})
