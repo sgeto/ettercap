@@ -229,9 +229,10 @@ static void daemonize(void)
    /* kill the father and detach the son */
    if ( pid != 0)
       _exit(0);
-
+#ifdef HAVE_SETSID
    if(setsid() == -1)
       ERROR_MSG("setsid(): cannot set the session id");
+#endif
 
    fd = open("/dev/null", O_RDWR);
    ON_ERROR(fd, -1, "Can't open /dev/null");

@@ -57,6 +57,7 @@
 #cmakedefine HAVE_EC_LUA
 
 #cmakedefine HAVE_FCHOWN
+#cmakedefine HAVE_SETSID
 #cmakedefine gid_t int
 #cmakedefine uid_t int
 #cmakedefine uint unsigned int
