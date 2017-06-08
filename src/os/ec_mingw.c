@@ -45,12 +45,12 @@ HANDLE pcap_getevent(pcap_t *p);
 
 
 #if defined(HAVE_NCURSES) && !defined(BUILDING_UTILS)
-    #include <missing/ncurses.h>
+    #include <ncurses.h>
     #include <wdg.h>
 
-    extern bool trace_on;   /* From <curspriv.h> */
-    extern int  PDC_check_bios_key (void);
-    extern void PDC_debug (char*, ...);
+/*    extern bool trace_on; */  /* From <curspriv.h> */
+/*    extern int  PDC_check_bios_key (void); */ /* From <curspriv.h> but now deprecated */
+/*    extern void PDC_debug (char*, ...); */
 #endif
 
 #ifndef __inline
@@ -216,9 +216,10 @@ int ec_win_gettimeofday (struct timeval *tv, struct timezone *tz)
 static int __inline win_kbhit (void)
 {
 #if defined(HAVE_NCURSES) && !defined(BUILDING_UTILS)
-   if ((current_screen.flags & WDG_SCR_INITIALIZED))
-      return PDC_check_bios_key();
-#endif
+/*    if ((current_screen.flags & WDG_SCR_INITIALIZED)) */
+/*      return PDC_check_bios_key(); */ /* From <curspriv.h> but now deprecated */
+#endif /* "current_screen.flags", who are you? who are you working for?! >:-( */
+
    return _kbhit();
 }
       
@@ -1052,25 +1053,13 @@ char *ec_win_strerror (int err)
   return (buf);
 }
 
-#if defined(HAVE_NCURSES) && !defined(BUILDING_UTILS)
-int vwprintw (WINDOW *win, const char *fmt, va_list args)
-{
-  char buf[1024];
-
-  if (trace_on)
-     PDC_debug ("vwprintw() - called\n");
-  _vsnprintf (buf, sizeof(buf), fmt, args);
-  return wprintw (win, buf);
-}
-#endif  /* HAVE_NCURSES && !BUILDING_UTILS */
-
 static void pdc_ncurses_init (void)
 {
 #if defined(HAVE_NCURSES) && !defined(BUILDING_UTILS)
   const char *env = getenv ("CURSES_TRACE");
 
   if (env && atoi(env) > 0) {
-    traceon();
+/*  traceon(); */ /* From <curspriv.h> */
     putenv ("NCURSES_TRACE=1");
   }
 
