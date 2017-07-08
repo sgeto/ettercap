@@ -38,18 +38,26 @@
 #include <time.h>
 
 /*
- * On Windows (MinGw) we must export all ettercap.exe variables/function
+ * On Windows we must export all ettercap.exe variables/function
  * used in plugins and functions in plugins must be declared as 'importable'
+ * FIXME: URGENT:
+ * This is a total mess. Someone with enough time, knowledge and patience
+ * should have a look at this.
+ * Until then, we'll take the Unix approach with MinGW and use a def
+ * file for MSVC.
  */
-#if defined(OS_WINDOWS)
-   #if defined(BUILDING_PLUGIN)
-      #define EC_API_EXTERN __declspec(dllimport)
-   #else
-      #define EC_API_EXTERN __declspec(dllexport)
-   #endif
-#else
+/* #if defined(OS_WINDOWS)
+ *   #if defined(BUILDING_PLUGIN)
+ *      #define EC_API_EXTERN __declspec(dllimport)
+ *   #else
+ *      #define EC_API_EXTERN __declspec(dllexport)
+ *   #endif
+ * #else
+*/
    #define EC_API_EXTERN extern
-#endif
+/*
+* #endif
+*/
 
 /* these are often needed... */
 #include <ec_queue.h>
