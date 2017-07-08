@@ -4,7 +4,9 @@
 #include <config.h>
 
 #include <sys/types.h>
+#ifndef _MSC_VER
 #include <sys/time.h>
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>

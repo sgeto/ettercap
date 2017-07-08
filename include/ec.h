@@ -4,7 +4,9 @@
 #include <config.h>
 
 #include <sys/types.h>
+#ifndef _MSC_VER
 #include <sys/time.h>
+#endif
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -33,8 +35,10 @@
 #if defined (__USE_GNU)
    #undef __USE_GNU
 #endif
+#ifndef _MSC_VER
 #include <strings.h>
 #include <unistd.h>
+#endif
 #include <time.h>
 
 /*
@@ -67,7 +71,7 @@
 #include <ec_globals.h>
 #include <ec_strings.h>
 
-#ifdef OS_MINGW
+#ifdef OS_WINDOWS
    #include <ec_os_mingw.h>
 #endif
 

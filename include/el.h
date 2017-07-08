@@ -4,7 +4,9 @@
 #include <config.h>
 
 #include <sys/types.h>
+#ifndef _MSC_VER
 #include <sys/time.h>
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,8 +17,10 @@
 #if defined (__USE_GNU)
    #undef __USE_GNU
 #endif
+#ifndef _MSC_VER
 #include <strings.h>
 #include <unistd.h>
+#endif
 #include <time.h>
 
 #define EC_API_EXTERN

@@ -52,8 +52,9 @@
 #define _ARPA_NAMESER_H_
 
 #define BIND_4_COMPAT
-
+#ifndef _MSC_VER
 #include <sys/param.h>
+#endif
 #if (!defined(BSD)) || (BSD < 199306)
 /* # include <sys/bitypes.h> */
 #include <sys/types.h>

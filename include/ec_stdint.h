@@ -5,8 +5,8 @@
 
 #if defined HAVE_STDINT_H && !defined OS_SOLARIS
 	#include <stdint.h>
-#ifdef OS_MINGW
-/* 
+#ifdef OS_WINDOWS
+/*
  * taken from bittypes.h
  */
 #ifndef HAVE_U_INT8_T
@@ -33,7 +33,7 @@
     typedef long long int64_t;
 #endif
 #endif
-#endif /* OS_MINGW */
+#endif /* OS_WINDOWS */
 
 #elif !defined OS_SOLARIS
 	#include <sys/types.h>
