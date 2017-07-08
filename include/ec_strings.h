@@ -1,6 +1,10 @@
 #ifndef ETTERCAP_STRINGS_H
 #define ETTERCAP_STRINGS_H
 
+#ifdef OS_WINDOWS
+   typedef unsigned char    u_char;
+#endif
+
 #ifdef HAVE_CTYPE_H
    #include <ctype.h>
 #else
