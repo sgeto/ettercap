@@ -62,7 +62,7 @@ if(OS_WINDOWS)
 
     set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--output-def, -Wl,${PROJECT_NAME}.def -Wl,--warn-common -Wl,--no-as-needed -Wl,--nxcompat -Wl,--dynamicbase" CACHE STRING "" FORCE)
 
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_CREATE_CONSOLE_EXE}" CACHE STRING "" FORCE)
+    set(CMAKE_EXE_LINKER_FLAGS "-Wl,--subsystem -Wl,windows" CACHE STRING "" FORCE)
 
   elseif(MSVC)
     add_definitions(-D_CRT_SECURE_NO_DEPRECATE)
