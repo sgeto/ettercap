@@ -134,7 +134,6 @@ endif(NOT DISABLE_RPATH)
 
 if(NOT MSVC)
 set(CMAKE_C_FLAGS_DEBUG "-O0 -ggdb3 -DDEBUG -Wall -Wno-pointer-sign -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -Werror=format-security -Wextra -Wredundant-decls" CACHE STRING "" FORCE)
-set(PIC -fPIC)
 else()
 set(CMAKE_C_FLAGS_DEBUG "/MDd /Ob0 /Od /DDEBUG /D_DEBUG /RTC1 /ZI /Gm- /D_FORTIFY_SOURCE=2" CACHE STRING "" FORCE)
 endif()
