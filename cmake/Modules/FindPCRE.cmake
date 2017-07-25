@@ -1,19 +1,29 @@
-# Copyright 2013 Ettercap Development Team.
+# Copyright 2017 Ettercap Development Team.
 #
 # Distributed under GPL licnse.
 #
 
+if(PCRE_ROOT)
+  set(PCRE_ROOT PATHS ${PCRE_ROOT} NO_DEFAULT_PATH)
+else()
+  set(PCRE_ROOT $ENV{PCRE_ROOT})
+endif(PCRE_ROOT)
+
 # Look for the header file
-FIND_PATH(PCRE_INCLUDE_DIR NAMES pcre.h)
+FIND_PATH(PCRE_INCLUDE_DIR NAMES pcre.h
+    HINTS ${PCRE_ROOT}/include
+)
 MARK_AS_ADVANCED(PCRE_INCLUDE_DIR)
 
 # Look for the library.
-FIND_LIBRARY(PCRE_LIBRARY NAMES pcre)
+FIND_LIBRARY(PCRE_LIBRARY NAMES pcre
+    HINTS ${PCRE_ROOT}/lib
+)
+
 if(WIN32)
-FIND_LIBRARY(PCREPOSIX_LIBRARY pcreposix)
-  if(NOT PCREPOSIX_LIBRARY)
-  message(FATAL_ERROR "Could not find PCREPOSIX library. See README.PLATFORMS for more information.")
-  endif()
+FIND_LIBRARY(PCREPOSIX_LIBRARY pcreposix
+    HINTS ${PCRE_ROOT}/lib
+)
 endif()
 MARK_AS_ADVANCED(PCRE_LIBRARY)
 MARK_AS_ADVANCED(PCREPOSIX_LIBRARY)
@@ -29,6 +39,13 @@ endif()
 if(NOT PCRE_LIBRARY)
   if(PCRE_FIND_REQUIRED AND NOT PCRE_FIND_QUIETLY)
     message(FATAL_ERROR "Could not find PCRE library.")
+  endif()
+  return()
+endif()
+
+if(NOT PCREPOSIX_LIBRARY AND WIN32)
+  if(PCRE_FIND_REQUIRED AND NOT PCRE_FIND_QUIETLY)
+    message(FATAL_ERROR "Could not find PCREPOSIX library. See README.PLATFORMS for more information.")
   endif()
   return()
 endif()
