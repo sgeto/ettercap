@@ -1,14 +1,24 @@
-# Copyright 2013 Ettercap Development Team.
+# Copyright 2017 Ettercap Development Team.
 #
 # Distributed under GPL license.
 #
 
+if(LIBNET_ROOT)
+  set(LIBNET_ROOT PATHS ${LIBNET_ROOT} NO_DEFAULT_PATH)
+else()
+  set(LIBNET_ROOT $ENV{LIBNET_ROOT})
+endif(LIBNET_ROOT)
+
 # Look for the header file
-FIND_PATH(LIBNET_INCLUDE_DIR NAMES libnet.h PATH_SUFFIXES libnet11)
+FIND_PATH(LIBNET_INCLUDE_DIR NAMES libnet.h PATH_SUFFIXES libnet11
+    HINTS ${LIBNET_ROOT}/include
+    )
 MARK_AS_ADVANCED(LIBNET_INCLUDE_DIR)
 
 #Look for the library
-FIND_LIBRARY(LIBNET_LIBRARY NAMES net libnet PATH_SUFFIXES libnet11)
+FIND_LIBRARY(LIBNET_LIBRARY NAMES net libnet PATH_SUFFIXES libnet11
+    HINTS ${LIBNET_ROOT}/lib
+    )
 MARK_AS_ADVANCED(LIBNET_LIBRARY)
 
 # Make sure we've got an include dir.
