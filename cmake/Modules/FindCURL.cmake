@@ -1,20 +1,34 @@
-# Copyright 2013 Ettercap Development Team.
+# Copyright 2017 Ettercap Development Team.
 #
 # Distributed under GPL licnse.
 #
 
+if(CURL_ROOT)
+  set(CURL_ROOT PATHS ${CURL_ROOT} NO_DEFAULT_PATH)
+else()
+  set(CURL_ROOT $ENV{CURL_ROOT})
+endif()
+
 # Look for the header file
-FIND_PATH(CURL_INCLUDE_DIR NAMES curl/curl.h)
+FIND_PATH(CURL_INCLUDE_DIR NAMES curl/curl.h
+    HINTS
+    ${CURL_INCLUDE_DIR}
+    ${CURL_ROOT}/include
+    )
 MARK_AS_ADVANCED(CURL_INCLUDE_DIR)
 
 # Look for the library.
 FIND_LIBRARY(CURL_LIBRARY NAMES 
     curl
   # Windows MSVC prebuilts:
+    libcurl
     curllib
     libcurl_imp
     curllib_static
-)
+    HINTS
+    ${CURL_LIBRARY}
+    ${CURL_ROOT}/lib
+    )
 MARK_AS_ADVANCED(CURL_LIBRARY)
 
 # Make sure we've got an include dir.
