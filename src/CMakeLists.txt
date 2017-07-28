@@ -130,9 +130,9 @@ if(ENABLE_IPV6)
     set(EC_SRC ${EC_SRC} protocols/ec_icmp6.c protocols/ec_ip6.c mitm/ec_ip6nd_poison.c)
 endif(ENABLE_IPV6)
 
-if(HAVE_DN_EXPAND)
+if(HAVE_DN_EXPAND OR OS_WINDOWS)
     set(EC_SRC ${EC_SRC} dissectors/ec_dns.c)
-endif(HAVE_DN_EXPAND)
+endif(HAVE_DN_EXPAND OR OS_WINDOWS)
 
 if(OS_LINUX)
     set(EC_SRC ${EC_SRC} os/ec_linux.c)
