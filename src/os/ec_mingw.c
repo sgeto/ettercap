@@ -166,7 +166,7 @@ int ec_win_pcap_stop (const void *pcap_handle)
   BOOL   rc;
   DWORD  err;
 
-  DEBUG_MSG("%s: signalling pcap to stop...", __FUNCTION__);
+  DEBUG_MSG("%s: signaling pcap to stop...", __FUNCTION__);
   if (!hnd) {
     DEBUG_MSG("no event-handle!?\n");
     return (0);
