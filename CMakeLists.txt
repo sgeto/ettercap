@@ -162,7 +162,10 @@ set(EC_INCLUDE_PATH ${CMAKE_CURRENT_BINARY_DIR}/include ${CMAKE_SOURCE_DIR}/incl
 include_directories(${EC_INCLUDE_PATH})
 
 add_subdirectory(src)
+
+if(INSTALL_DESKTOP)
 add_subdirectory(desktop)
+endif(INSTALL_DESKTOP)
 
 if(HAVE_PLUGINS OR ENABLE_PLUGINS)
 add_subdirectory(plug-ins)
