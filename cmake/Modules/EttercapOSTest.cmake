@@ -50,6 +50,9 @@ if(OS_WINDOWS)
   endif(ENABLE_GTK)
   # Additional compiler and linker flags for windows should be set here *only*.
   if(MINGW)
+
+    set(CMAKE_C_FLAGS "-static-libgcc -static-libstdc++" CACHE STRING "" FORCE)
+
     if(CMAKE_BUILD_TYPE STREQUAL Release)
       set(CMAKE_RC_FLAGS "-Iinclude -v" CACHE STRING "" FORCE)
     elseif(CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
