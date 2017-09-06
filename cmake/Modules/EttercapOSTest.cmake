@@ -63,7 +63,7 @@ if(OS_WINDOWS)
 
     set(CMAKE_C_STANDARD_LIBRARIES "-lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32 -lws2_32" CACHE STRING "" FORCE)
 
-    set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--output-def, -Wl,${PROJECT_NAME}.def -Wl,--warn-common -Wl,--no-as-needed -Wl,--nxcompat -Wl,--dynamicbase" CACHE STRING "" FORCE)
+    set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--output-def -Wl,${PROJECT_NAME}.def -Wl,--warn-common -Wl,--no-as-needed -Wl,--nxcompat -Wl,--dynamicbase" CACHE STRING "" FORCE)
 
     set(CMAKE_EXE_LINKER_FLAGS "-Wl,--subsystem -Wl,windows" CACHE STRING "" FORCE)
 
