@@ -31,6 +31,13 @@
 #include <fcntl.h>
 #include <signal.h>
 
+#ifdef OS_WINDOWS
+#define SIGTTOU 22 // or 27?
+#define SIGTTIN 21 // or 26?
+#define SIGTSTP 18 // or 24 or 8?
+#define SIGHUP 1 // or 5?
+#endif
+
 /* globals */
 static int fd;
 
@@ -222,9 +229,10 @@ static void daemonize(void)
    /* kill the father and detach the son */
    if ( pid != 0)
       _exit(0);
-
+#ifdef HAVE_SETSID
    if(setsid() == -1)
       ERROR_MSG("setsid(): cannot set the session id");
+#endif
 
    fd = open("/dev/null", O_RDWR);
    ON_ERROR(fd, -1, "Can't open /dev/null");

@@ -246,7 +246,7 @@ void ec_thread_init(void)
       ERROR_MSG("raising init_cond: %s", strerror(e));
    INIT_UNLOCK;
    
-   DEBUG_MSG("ec_thread_init -- (%lu) ready and syncronized",  PTHREAD_ID(id));
+   DEBUG_MSG("ec_thread_init -- (%lu) ready and synchronized",  PTHREAD_ID(id));
 }
 
 /*

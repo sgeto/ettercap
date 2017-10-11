@@ -39,18 +39,18 @@
 
 #include <pcap.h>
 #include <Packet32.h>
-#include <ddk/NtddNdis.h>
+#include <Ntddndis.h>
 
 HANDLE pcap_getevent(pcap_t *p);
 
 
 #if defined(HAVE_NCURSES) && !defined(BUILDING_UTILS)
-    #include <missing/ncurses.h>
+    #include <ncurses.h>
     #include <wdg.h>
 
-    extern bool trace_on;   /* From <curspriv.h> */
-    extern int  PDC_check_bios_key (void);
-    extern void PDC_debug (char*, ...);
+/*    extern bool trace_on; */  /* From <curspriv.h> */
+/*    extern int  PDC_check_bios_key (void); */ /* From <curspriv.h> but now deprecated */
+/*    extern void PDC_debug (char*, ...); */
 #endif
 
 #ifndef __inline
@@ -166,7 +166,7 @@ int ec_win_pcap_stop (const void *pcap_handle)
   BOOL   rc;
   DWORD  err;
 
-  DEBUG_MSG("%s: signalling pcap to stop...", __FUNCTION__);
+  DEBUG_MSG("%s: signaling pcap to stop...", __FUNCTION__);
   if (!hnd) {
     DEBUG_MSG("no event-handle!?\n");
     return (0);
@@ -215,41 +215,53 @@ int ec_win_gettimeofday (struct timeval *tv, struct timezone *tz)
  */
 static int __inline win_kbhit (void)
 {
+  int rc = 0;
+
 #if defined(HAVE_NCURSES) && !defined(BUILDING_UTILS)
-   if ((current_screen.flags & WDG_SCR_INITIALIZED))
-      return PDC_check_bios_key();
+  if ((current_screen.flags & WDG_SCR_INITIALIZED))
+     return PDC_check_bios_key();
 #endif
-   return _kbhit();
+  if (_kbhit())
+     rc = _getch();
+  if (rc)
+     ungetc (rc, stdin);
+  return (rc);
 }
-      
+
 /*
- * A poll() using select() 
+ * A poll() using select()
  */
+#define HOW_MANY(x, y)  ((x + (y - 1)) / y)
+
 int ec_win_poll (struct pollfd *p, int num, int timeout)
 {
   struct timeval tv;
-  int    i, n, ret, num_fd = (num + sizeof(fd_set)-1) / sizeof(fd_set);
-  fd_set read  [num_fd];
-  fd_set write [num_fd];
-  fd_set excpt [num_fd];
+  size_t size = FD_SETSIZE * HOW_MANY(num, FD_SETSIZE);
+  fd_set *read  = alloca (size);
+  fd_set *write = alloca (size);
+  fd_set *excpt = alloca (size);
+  int     i, n = -1, n_socks = 0, ret = 0;
 
-  FD_ZERO (&read);
-  FD_ZERO (&write);
-  FD_ZERO (&excpt);
+  FD_ZERO (read);
+  FD_ZERO (write);
+  FD_ZERO (excpt);
 
-  n = -1;
   for (i = 0; i < num; i++) {
     if (p[i].fd < 0)
        continue;
 
-    if ((p[i].events & POLLIN) && i != STDIN_FILENO)
-        FD_SET (p[i].fd, &read[0]);
+    if ((p[i].events & POLLIN) && i != STDIN_FILENO) {
+       FD_SET (p[i].fd, read);
+       n_socks++;
+    }
 
-    if ((p[i].events & POLLOUT) && i != STDOUT_FILENO)
-        FD_SET (p[i].fd, &write[0]);
+    if ((p[i].events & POLLOUT) && i != STDOUT_FILENO) {
+       FD_SET (p[i].fd, write);
+       n_socks++;
+    }
 
     if (p[i].events & POLLERR)
-       FD_SET (p[i].fd, &excpt[0]);
+       FD_SET (p[i].fd, excpt);
 
     if (p[i].fd > n)
        n = p[i].fd;
@@ -258,22 +270,34 @@ int ec_win_poll (struct pollfd *p, int num, int timeout)
   if (n == -1)
      return (0);
 
-  if (timeout < 0)
-     ret = select (n+1, &read[0], &write[0], &excpt[0], NULL);
-  else {
-    tv.tv_sec  = MILLI2SEC(timeout);
-    tv.tv_usec = MILLI2MICRO((timeout % 1000));
-    ret = select (n+1, &read[0], &write[0], &excpt[0], &tv);
-  }
+  if (n_socks > 0) {
 
-  for (i = 0; ret >= 0 && i < num; i++) {
-    p[i].revents = 0;
-    if (FD_ISSET (p[i].fd, &read[0]))
-       p[i].revents |= POLLIN;
-    if (FD_ISSET (p[i].fd, &write[0]))
-       p[i].revents |= POLLOUT;
-    if (FD_ISSET (p[i].fd, &excpt[0]))
-       p[i].revents |= POLLERR;
+    /* select() in Winsock ignores 'n+1'.
+     */
+    if (timeout < 0)
+       ret = select (n+1, read, write, excpt, NULL);
+    else {
+      tv.tv_sec  = MILLI2SEC(timeout);
+      tv.tv_usec = MILLI2MICRO((timeout % 1000));
+      ret = select (n+1, read, write, excpt, &tv);
+    }
+
+    for (i = 0; ret >= 0 && i < num; i++) {
+      p[i].revents = 0;
+      if (FD_ISSET (p[i].fd, read))
+         p[i].revents |= POLLIN;
+      if (FD_ISSET (p[i].fd, write))
+         p[i].revents |= POLLOUT;
+      if (FD_ISSET (p[i].fd, excpt))
+         p[i].revents |= POLLERR;
+    }
+  }
+  else {
+#if 0
+    DEBUG_MSG ("%s(): n: %d, n_sock = 0, timeout: %d",
+               __func__, n, timeout);
+#endif
+    Sleep (10);
   }
 
   if ((p[STDIN_FILENO].events & POLLIN) && num >= STDIN_FILENO && win_kbhit()) {
@@ -1052,25 +1076,13 @@ char *ec_win_strerror (int err)
   return (buf);
 }
 
-#if defined(HAVE_NCURSES) && !defined(BUILDING_UTILS)
-int vwprintw (WINDOW *win, const char *fmt, va_list args)
-{
-  char buf[1024];
-
-  if (trace_on)
-     PDC_debug ("vwprintw() - called\n");
-  _vsnprintf (buf, sizeof(buf), fmt, args);
-  return wprintw (win, buf);
-}
-#endif  /* HAVE_NCURSES && !BUILDING_UTILS */
-
 static void pdc_ncurses_init (void)
 {
 #if defined(HAVE_NCURSES) && !defined(BUILDING_UTILS)
   const char *env = getenv ("CURSES_TRACE");
 
   if (env && atoi(env) > 0) {
-    traceon();
+/*  traceon(); */ /* From <curspriv.h> */
     putenv ("NCURSES_TRACE=1");
   }
 

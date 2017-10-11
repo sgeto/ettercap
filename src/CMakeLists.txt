@@ -1,5 +1,5 @@
 set(EC_SRC
-	ec_mem.c
+        ec_mem.c
         ec_capture.c
         ec_checksum.c
         ec_conf.c
@@ -123,16 +123,16 @@ set(EC_SRC
 
 
 if (HAVE_GEOIP)
-        set(EC_SRC ${EC_SRC} ec_geoip.c)
+    set(EC_SRC ${EC_SRC} ec_geoip.c)
 endif(HAVE_GEOIP)
 
 if(ENABLE_IPV6)
     set(EC_SRC ${EC_SRC} protocols/ec_icmp6.c protocols/ec_ip6.c mitm/ec_ip6nd_poison.c)
 endif(ENABLE_IPV6)
 
-if(HAVE_DN_EXPAND)
+if(HAVE_DN_EXPAND OR OS_WINDOWS)
     set(EC_SRC ${EC_SRC} dissectors/ec_dns.c)
-endif(HAVE_DN_EXPAND)
+endif(HAVE_DN_EXPAND OR OS_WINDOWS)
 
 if(OS_LINUX)
     set(EC_SRC ${EC_SRC} os/ec_linux.c)
@@ -140,7 +140,7 @@ elseif(OS_BSD)
     set(EC_SRC ${EC_SRC} os/ec_bsd.c)
 elseif(OS_DARWIN)
     set(EC_SRC ${EC_SRC} os/ec_darwin.c)
-elseif(OS_MINGW)
+elseif(OS_WINDOWS AND NOT OS_CYGWIN)
     set(EC_SRC ${EC_SRC} os/ec_mingw.c)
 elseif(OS_SOLARIS)
     set(EC_SRC ${EC_SRC} os/ec_solaris.c)
@@ -175,6 +175,9 @@ endif(NOT HAVE_STRNDUP)
 if(NOT HAVE_GETOPT_LONG AND NOT HAVE_GETOPT_H)
     set(EC_SRC ${EC_SRC} missing/getopt.c)
 endif(NOT HAVE_GETOPT_LONG AND NOT HAVE_GETOPT_H)
+if(NOT HAVE_SCANDIR AND (HAVE_PLUGINS OR ENABLE_PLUGINS))
+    set(EC_SRC ${EC_SRC} missing/scandir.c)
+endif(NOT HAVE_SCANDIR AND (HAVE_PLUGINS OR ENABLE_PLUGINS))
 
 add_library(lib_ettercap SHARED ${EC_SRC})
 add_dependencies(lib_ettercap libnet)

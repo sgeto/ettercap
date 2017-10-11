@@ -7,6 +7,9 @@
 #cmakedefine OS_BSD_OPEN
 #cmakedefine OS_DARWIN
 #cmakedefine OS_GNU
+#cmakedefine OS_WINDOWS
+#cmakedefine OS_MINGW
+#cmakedefine OS_CYGWIN
 
 #cmakedefine WORDS_BIGENDIAN
 #cmakedefine OS_SIZEOF_P @OS_SIZEOF_P@
@@ -52,6 +55,12 @@
 #cmakedefine WITH_IPV6
 #cmakedefine WITH_GEOIP
 #cmakedefine HAVE_EC_LUA
+
+#cmakedefine HAVE_FCHOWN
+#cmakedefine HAVE_SETSID
+#cmakedefine gid_t int
+#cmakedefine uid_t int
+#cmakedefine uint unsigned int
 
 #cmakedefine INSTALL_PREFIX         "@INSTALL_PREFIX@"
 #cmakedefine INSTALL_SYSCONFDIR     "@INSTALL_SYSCONFDIR@"

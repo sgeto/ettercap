@@ -46,15 +46,6 @@
 /* to avoid conflict with system includes */
 #define _SYS_QUEUE_H_
 
-/* Needed because SLIST_HEAD is defined in <winnt.h> too.  */
-#if defined(OS_WINDOWS)
-   #if !defined(_WINNT_H)
-      #error Include <windows.h> before <ec_queue.h>
-   #endif
-   /* <winnt.h> */
-   #undef  SLIST_ENTRY
-#endif
-
 /*
  * This file defines five types of data structures: singly-linked lists, 
  * lists, simple queues, tail queues, and circular queues.

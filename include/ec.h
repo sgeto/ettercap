@@ -4,7 +4,9 @@
 #include <config.h>
 
 #include <sys/types.h>
+#ifndef _MSC_VER
 #include <sys/time.h>
+#endif
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -33,23 +35,33 @@
 #if defined (__USE_GNU)
    #undef __USE_GNU
 #endif
+#ifndef _MSC_VER
 #include <strings.h>
 #include <unistd.h>
+#endif
 #include <time.h>
 
 /*
- * On Windows (MinGw) we must export all ettercap.exe variables/function
+ * On Windows we must export all ettercap.exe variables/function
  * used in plugins and functions in plugins must be declared as 'importable'
+ * FIXME: URGENT:
+ * This is a total mess. Someone with enough time, knowledge and patience
+ * should have a look at this.
+ * Until then, we'll take the Unix approach with MinGW and use a def
+ * file for MSVC.
  */
-#if defined(OS_WINDOWS)
-   #if defined(BUILDING_PLUGIN)
-      #define EC_API_EXTERN __declspec(dllimport)
-   #else
-      #define EC_API_EXTERN __declspec(dllexport)
-   #endif
-#else
+/* #if defined(OS_WINDOWS)
+ *   #if defined(BUILDING_PLUGIN)
+ *      #define EC_API_EXTERN __declspec(dllimport)
+ *   #else
+ *      #define EC_API_EXTERN __declspec(dllexport)
+ *   #endif
+ * #else
+*/
    #define EC_API_EXTERN extern
-#endif
+/*
+* #endif
+*/
 
 /* these are often needed... */
 #include <ec_queue.h>
@@ -59,7 +71,7 @@
 #include <ec_globals.h>
 #include <ec_strings.h>
 
-#ifdef OS_MINGW
+#ifdef OS_WINDOWS
    #include <ec_os_mingw.h>
 #endif
 

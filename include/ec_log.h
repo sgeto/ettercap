@@ -7,9 +7,11 @@
 #include <ec_resolv.h>
 
 #include <zlib.h>
+
+#ifndef _MSC_VER
 #include <sys/time.h>
 #include <unistd.h>
-
+#endif
 
 struct log_fd {
    int type;

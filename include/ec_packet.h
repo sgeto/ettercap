@@ -6,7 +6,10 @@
 #include <ec_fingerprint.h>
 #include <ec_inet.h>
 #include <ec_session.h>
+
+#ifndef _MSC_VER
 #include <sys/time.h>
+#endif
 
 struct packet_object {
  

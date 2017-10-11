@@ -1,7 +1,21 @@
 # Add man page custom target
 if(ENABLE_PDF_DOCS)
+  message(STATUS "PDF documention requested. Will look for the GNU troff text-formatting system 'groff' and 'ps2pdf' (part of the PostScript language interpreter 'Ghostscript')")
+  
   find_program(GROFF_EXECUTABLE NAMES groff)
+  if(GROFF_EXECUTABLE)
+    message(STATUS "Found groff: ${GROFF_EXECUTABLE}")
+  else()
+    message(FATAL_ERROR "groff not found!")
+  endif(GROFF_EXECUTABLE)
+
   find_program(PS2PDF_EXECUTABLE NAMES ps2pdf)
+  if(PS2PDF_EXECUTABLE)
+    message(STATUS "Found ps2pdf: ${PS2PDF_EXECUTABLE}")
+  else()
+    message(FATAL_ERROR "ps2pdf not found!")
+  endif(PS2PDF_EXECUTABLE)
+
   set(PDF_FILES)
 endif()
 

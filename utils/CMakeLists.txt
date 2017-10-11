@@ -45,7 +45,6 @@ set(EL_SRC
 
 add_executable(etterlog ${EL_SRC})
 target_link_libraries(etterlog lib_ettercap)
-
 if(NOT DISABLE_RPATH)
   set_target_properties(etterlog PROPERTIES INSTALL_RPATH ${INSTALL_LIBDIR})
 endif(NOT DISABLE_RPATH)
