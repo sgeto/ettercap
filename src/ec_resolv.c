@@ -35,7 +35,7 @@
 
 #define TABBIT    9 /* 2^9 bit tab entries: 512 SLISTS */
 #define TABSIZE   (1UL<<TABBIT)
-#define TABMASK   (TABSIZE-1) /* to mask fnv_1 hash algorithm */
+#define TABMASK   (TABSIZE-1) /* to mask FNV-1 hash algorithm */
 
 /* globals */
 static pthread_mutex_t resolvc_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -81,7 +81,7 @@ static int resolv_queue_pop(struct ip_addr *ip);
  * speed.
  * if the name can not be found in the cache and name
  * resolution is enabled, -E_NOMATCH is returned indicating
- * that the background resolution using getnameinfo 
+ * that the background resolution using getnameinfo
  * starts and the the result is inserted in the cache.
  * The caller can fetch the name with a second call
  * directly from the cache, even if no name was found.
@@ -97,7 +97,7 @@ int host_iptoa(struct ip_addr *ip, char *name)
 
    /* initialize the name */
    strncpy(name, "", 1);
-  
+
    /* sanity check */
    if (ip_addr_is_zero(ip))
       return -E_NOTHANDLED;
@@ -118,17 +118,17 @@ int host_iptoa(struct ip_addr *ip, char *name)
     */
    if (!GBL_OPTIONS->resolve)
       return -E_NOTFOUND;
-  
+
    DEBUG_MSG("host_iptoa() %s not in cache", ip_addr_ntoa(ip, tmp));
 
-   /* 
+   /*
     * The host was not in the cache but requests to resolve,
     * so we continue resolving it in a non-blocking manner.
     * We return -E_NOMATCH to indicate that we try to resolve it
     * and the result may be in the cache later.
     * That way we don't block the application if the OS is configured
     * to include mDNS in the host resolution process (/etc/nsswitch.conf).
-    * Including mDNS enriches the results but heavily delays if 
+    * Including mDNS enriches the results but heavily delays if
     * many hosts are online on the link.
     */
    RESOLVQ_LOCK;
@@ -153,7 +153,7 @@ int host_iptoa(struct ip_addr *ip, char *name)
 void resolv_thread_init(void)
 {
    int i;
-   char thread_name[16]; 
+   char thread_name[16];
 
    DEBUG_MSG("resolv_thread_init()");
 
@@ -163,7 +163,7 @@ void resolv_thread_init(void)
    /* spawn resolution worker threads */
    for (i = 0; i < NUM_RESOLV_THREADS; i++) {
       snprintf(thread_name, sizeof(thread_name), "resolver-%d", i+1);
-      resolv_threads[i] = ec_thread_new(thread_name, "DNS resolver", 
+      resolv_threads[i] = ec_thread_new(thread_name, "DNS resolver",
             &resolv_thread_main, NULL);
    }
 }
@@ -186,7 +186,7 @@ void resolv_thread_fini(void)
       if (strcmp(ec_thread_getname(resolv_threads[i]), "NR_THREAD"))
          /* send cancel signal to thread */
          ec_thread_destroy(resolv_threads[i]);
-   
+
    /* empty queue and free allocated memory if applicable */
    RESOLVQ_LOCK;
    while (!STAILQ_EMPTY(&resolv_queue_head)) {
@@ -199,7 +199,7 @@ void resolv_thread_fini(void)
 
 /*
  * this function the resolution threads wait in this function
- * until a IP address is to be resolved and inserted into the 
+ * until a IP address is to be resolved and inserted into the
  * name cache. With many IP hosts on the link, the number of
  * parallel threads can be increased by NUM_RESOLV_THREADS.
  */
@@ -251,23 +251,23 @@ EC_THREAD_FUNC(resolv_thread_main)
       }
 
       /*
-       * yeah, we got something to do - lets rock..... 
+       * yeah, we got something to do - lets rock.....
        * In any case the name cache is updated so that a second call of
        * of host_iptoa() gets a result.
        */
       if (resolv_dns(&ip, host)) {
-         /* 
+         /*
           * insert the "" in the cache so we don't search for
           * non existent hosts every new query.
           */
-         DEBUG_MSG("resolv_dns: not found for %s", 
+         DEBUG_MSG("resolv_dns: not found for %s",
                ip_addr_ntoa(&ip, tmp));
 
          RESOLVC_LOCK;
          resolv_cache_insert(&ip, "");
          RESOLVC_UNLOCK;
       } else {
-         DEBUG_MSG("resolv_dns: %s found for %s", host, 
+         DEBUG_MSG("resolv_dns: %s found for %s", host,
                ip_addr_ntoa(&ip, tmp));
 
          /* insert the result in the cache for later use */
@@ -280,7 +280,7 @@ EC_THREAD_FUNC(resolv_thread_main)
    return NULL;
 }
 
-/* 
+/*
  * perform the ip to name resolution as a dedicated thread.
  */
 static int resolv_dns(struct ip_addr *ip, char *hostname)
@@ -289,7 +289,7 @@ static int resolv_dns(struct ip_addr *ip, char *hostname)
    struct sockaddr_in *sa4;
    struct sockaddr_in6 *sa6;
    socklen_t sa_len;
-   
+
    /* prepare struct */
    switch (ntohs(ip->addr_type)) {
       case AF_INET:
@@ -307,7 +307,7 @@ static int resolv_dns(struct ip_addr *ip, char *hostname)
    }
 
    /* resolve */
-   return getnameinfo((struct sockaddr *)&ss, sa_len, 
+   return getnameinfo((struct sockaddr *)&ss, sa_len,
             hostname, MAX_HOSTNAME_LEN, NULL, 0, NI_NAMEREQD);
 
 }
@@ -325,19 +325,19 @@ static int resolv_cache_search(struct ip_addr *ip, char *name)
 
    /* calculate the hash */
    h = fnv_32(ip->addr, ntohs(ip->addr_len)) & TABMASK;
-      
+
    SLIST_FOREACH(r, &resolv_cache_head[h], next) {
       if (!ip_addr_cmp(&r->ip, ip)) {
          /* found in the cache */
-         
-         DEBUG_MSG("resolv_cache_search: found: %s -> %s", 
-               ip_addr_ntoa(ip, tmp), r->hostname);
-         
+
+         DEBUG_MSG("resolv_cache_search: found: %s -> %s",
+               ip_addr_ntoa(ip, tmp), r->hostname[0] ? r->hostname : "<empty>");
+
          strlcpy(name, r->hostname, MAX_HOSTNAME_LEN - 1);
          return E_SUCCESS;
       }
    }
-   
+
    /* cache miss */
    return -E_NOTFOUND;
 }
@@ -353,7 +353,7 @@ void resolv_cache_insert(struct ip_addr *ip, char *name)
    pthread_t pid;
    char tmp[MAX_ASCII_ADDR_LEN];
 
-   /* 
+   /*
     * make sure this function is not called by the main thread.
     * this is important because parallel writing of the cache
     * can lead to segmentation faults due to race conditions
@@ -367,7 +367,7 @@ void resolv_cache_insert(struct ip_addr *ip, char *name)
    /* calculate the hash */
    h = fnv_32(ip->addr, ntohs(ip->addr_len)) & TABMASK;
 
-   /* 
+   /*
     * search if it is already in the cache.
     * this will pervent passive insertion to overwrite
     * previous cached results
@@ -377,7 +377,7 @@ void resolv_cache_insert(struct ip_addr *ip, char *name)
       if (!ip_addr_cmp(&r->ip, ip)) {
          DEBUG_MSG("resolv_cache_insert: %s already in cache - skipping",
                ip_addr_ntoa(ip, tmp));
-         return; 
+         return;
       }
    }
 
@@ -387,17 +387,17 @@ void resolv_cache_insert(struct ip_addr *ip, char *name)
 
    memcpy(&r->ip, ip, sizeof(struct ip_addr));
    r->hostname = strdup(name);
-   
+
    SLIST_INSERT_HEAD(&(resolv_cache_head[h]), r, next);
 
    DEBUG_MSG("resolv_cache_insert: inserted %s --> %s",
-         tmp, name);
-   
+         tmp, r->hostname[0] ? r->hostname : "<empty>");
+
 }
 
-/* 
+/*
  * wrapper function for the passive name recognition
- * ensuring syncronization with active name resolving 
+ * ensuring syncronization with active name resolving
  * threads
  */
 void resolv_cache_insert_passive(struct ip_addr *ip, char *name)

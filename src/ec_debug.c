@@ -33,8 +33,13 @@
 
 #include <openssl/opensslv.h>
 #include <openssl/crypto.h>
+
 #ifdef HAVE_PCRE
    #include <pcre.h>
+#endif
+
+#ifdef HAVE_GTK
+   #include <ec_gtk.h>
 #endif
 
 #include <libnet.h>
@@ -53,6 +58,12 @@
 
 FILE *debug_file = NULL;
 
+#if defined(DETAILED_DEBUG)
+  FILE       *debug_out;
+  const char *debug_fname;
+  unsigned    debug_line;
+#endif
+
 static pthread_mutex_t debug_mutex = PTHREAD_MUTEX_INITIALIZER;
 #define DEBUG_LOCK     do{ pthread_mutex_lock(&debug_mutex); } while(0)
 #define DEBUG_UNLOCK   do{ pthread_mutex_unlock(&debug_mutex); } while(0)
@@ -69,24 +80,27 @@ void debug_init(void)
    struct utsname buf;
 #endif
    DEBUG_LOCK;
-   
+
+#if !defined(DETAILED_DEBUG)
    if ((debug_file = fopen (GBL_DEBUG_FILE, "w")) == NULL)
       ERROR_MSG("Couldn't open for writing %s", GBL_DEBUG_FILE);
-   
+#endif
+
    fprintf (debug_file, "\n==============================================================\n\n");
-                   
-  	fprintf (debug_file, "-> ${prefix}        %s\n", INSTALL_PREFIX);
-  	fprintf (debug_file, "-> ${exec_prefix}   %s\n", INSTALL_EXECPREFIX);
-  	fprintf (debug_file, "-> ${bindir}        %s\n", INSTALL_BINDIR);
-  	fprintf (debug_file, "-> ${libdir}        %s\n", INSTALL_LIBDIR);
-  	fprintf (debug_file, "-> ${sysconfdir}    %s\n", INSTALL_SYSCONFDIR);
-  	fprintf (debug_file, "-> ${datadir}       %s\n\n", INSTALL_DATADIR);
+
+   fprintf (debug_file, "-> ${prefix}              %s\n", INSTALL_PREFIX);
+   fprintf (debug_file, "-> ${exec_prefix}         %s\n", INSTALL_EXECPREFIX);
+   fprintf (debug_file, "-> ${bindir}              %s\n", INSTALL_BINDIR);
+   fprintf (debug_file, "-> ${libdir}              %s\n", INSTALL_LIBDIR);
+   fprintf (debug_file, "-> ${sysconfdir}          %s\n", INSTALL_SYSCONFDIR);
+   fprintf (debug_file, "-> ${datadir}             %s\n\n", INSTALL_DATADIR);
 
    #ifdef HAVE_EC_LUA
-	ec_lua_print_info(debug_file);
+   ec_lua_print_info(debug_file);
    #endif
 
-  	fprintf (debug_file, "-> %s %s\n\n", GBL_PROGRAM, GBL_VERSION);
+   fprintf (debug_file, "-> %s %s\n\n", GBL_PROGRAM, GBL_VERSION);
+
    #ifdef HAVE_SYS_UTSNAME_H
       uname(&buf);
       fprintf (debug_file, "-> running on %s %s %s\n", buf.sysname, buf.release, buf.machine);
@@ -97,22 +111,29 @@ void debug_init(void)
    #if defined (__GLIBC__) && defined (__GLIBC_MINOR__)
       fprintf (debug_file, "-> glibc version %d.%d\n", __GLIBC__, __GLIBC_MINOR__);
    #endif
+   #if defined(HAVE_GTK) && defined(GTK_MAJOR_VERSION)
+      fprintf (debug_file, "-> GTK version %d.%d.%d\n", GTK_MAJOR_VERSION, GTK_MINOR_VERSION, GTK_MICRO_VERSION);
+   #endif
+
    fprintf(debug_file, "-> %s\n", pcap_lib_version());
    fprintf(debug_file, "-> libnet version %s\n", LIBNET_VERSION);
-   fprintf(debug_file, "-> libz version %s\n", zlibVersion());
+   fprintf(debug_file, "-> libz version %s, compileFlags 0x%lx\n", zlibVersion(), zlibCompileFlags());
+
    #ifdef HAVE_PCRE
    fprintf(debug_file, "-> libpcre version %s\n", pcre_version());
    #endif
    #ifdef HAVE_EC_LUA
-	ec_lua_print_version(debug_file);
+   ec_lua_print_version(debug_file);
    #endif
+
    fprintf (debug_file, "-> lib     %s\n", SSLeay_version(SSLEAY_VERSION));
    fprintf (debug_file, "-> headers %s\n", OPENSSL_VERSION_TEXT);
+
    fprintf (debug_file, "\n\nDEVICE OPENED FOR %s DEBUGGING\n\n", GBL_PROGRAM);
    fflush(debug_file);
-   
+
    DEBUG_UNLOCK;
-   
+
    atexit(debug_close);
 }
 
@@ -121,10 +142,13 @@ void debug_init(void)
 void debug_close(void)
 {
    DEBUG_LOCK;
-   
+
+#if !defined(DETAILED_DEBUG)
    fprintf (debug_file, "\n\nDEVICE CLOSED FOR DEBUGGING\n\n");
    fflush(debug_file);
    fclose (debug_file);
+#endif
+
    /* set it to null and check from other threads */
    debug_file = NULL;
 
@@ -132,10 +156,40 @@ void debug_close(void)
 }
 
 
+#if defined(DETAILED_DEBUG)
+void debug_console_init (void)
+{
+  debug_out = stdout;
+  debug_file = debug_out;
+  debug_init();
+}
+
+void debug_console (const char *message, ...)
+{
+   va_list ap;
+   size_t debug_len = strlen(message)+2;
+   char *debug_message = alloca (debug_len);
+
+   DEBUG_LOCK;
+
+   strcpy(debug_message, message);
+   debug_message [debug_len-2] = '\n';
+   debug_message [debug_len-1] = '\0';
+
+   va_start (ap, message);
+   vfprintf(debug_file, debug_message, ap);
+   va_end(ap);
+   fflush (debug_out);
+
+   DEBUG_UNLOCK;
+}
+#else
+
 void debug_msg(const char *message, ...)
 {
    va_list ap;
-   char debug_message[strlen(message)+2];
+   size_t debug_len = strlen(message)+2;
+   char *debug_message = alloca (debug_len);
 
    DEBUG_LOCK;
 
@@ -145,8 +199,9 @@ void debug_msg(const char *message, ...)
 
    fprintf(debug_file, "[%9s]\t", ec_thread_getname(EC_PTHREAD_SELF));
 
-   strlcpy(debug_message, message, sizeof(debug_message));
-   strlcat(debug_message, "\n", sizeof(debug_message));
+   strcpy(debug_message, message);
+   debug_message [debug_len-2] = '\n';
+   debug_message [debug_len-1] = '\0';
 
    va_start(ap, message);
    vfprintf(debug_file, debug_message, ap);
@@ -156,7 +211,7 @@ void debug_msg(const char *message, ...)
 
    DEBUG_UNLOCK;
 }
-
+#endif /* DETAILED_DEBUG */
 #endif /* DEBUG */
 
 

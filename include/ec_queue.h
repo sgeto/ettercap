@@ -48,7 +48,7 @@
 
 /* Needed because SLIST_HEAD is defined in <winnt.h> too.  */
 #if defined(OS_WINDOWS)
-   #if !defined(_WINNT_H)
+   #if !(defined(_WINNT_H) || defined(_WINNT_))
       #error Include <windows.h> before <ec_queue.h>
    #endif
    /* <winnt.h> */

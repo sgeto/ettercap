@@ -1,5 +1,5 @@
 /*
-    ettercap -- mingw specific functions
+    ettercap -- Win32 specific functions
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -15,34 +15,39 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-    
+
     Various functions needed for native Windows compilers (not CygWin I guess??)
     We export these (for the plugins) with a "ec_win_" prefix in order not to accidentally
     link with other symbols in some foreign lib.
 
-    Copyright (C) G. Vanem 2003   <giva@bgnett.no>
+    Copyright (C) G. Vanem 2003   <gvanem@yahoo.no>
 
  */
 
 #include <ec.h>
 #include <ec_inet.h>
 #include <errno.h>
+#include <stdarg.h>
 #include <signal.h>
 #include <ctype.h>
 #include <sys/timeb.h>
 #include <conio.h>
 #include <io.h>
-
-#ifndef WPCAP
-#define WPCAP  /* makes <pcap.h> include <Win32-Extensions.h> */
-#endif
+#include <windows.h>
 
 #include <pcap.h>
 #include <Packet32.h>
-#include <ddk/NtddNdis.h>
 
-HANDLE pcap_getevent(pcap_t *p);
+/* Old-school MinGW have these headers in a different place.
+ */
+#if defined(__MINGW32__) && !defined(__MINGW64_VERSION_MAJOR)
+  #include <ddk/ndis.h>
+  #include <ddk/ntddndis.h>
+#else
+  #include <Ntddndis.h>
+#endif
 
+extern PCAP_API HANDLE pcap_getevent (pcap_t *p);
 
 #if defined(HAVE_NCURSES) && !defined(BUILDING_UTILS)
     #include <missing/ncurses.h>
@@ -53,35 +58,81 @@ HANDLE pcap_getevent(pcap_t *p);
     extern void PDC_debug (char*, ...);
 #endif
 
+const char *ec_trace_file  = "<none>";
+unsigned    ec_trace_line  = 0;
+unsigned    ec_trace_level = 255;
+
 #ifndef __inline
 #define __inline
 #endif
 
-/* Most of this is *not* MingW specific, but Ettercap requires gcc */
-#ifndef __GNUC__
-#error "You must be joking"
+#ifndef STDIN_FILENO
+#define STDIN_FILENO   0
+#endif
+
+#ifndef STDOUT_FILENO
+#define STDOUT_FILENO  1
 #endif
 
 #ifndef ATTACH_PARENT_PROCESS
 #define ATTACH_PARENT_PROCESS  ((DWORD)-1)
 #endif
 
-static void setup_console(void);
-static void pdc_ncurses_init(void);
-static void __attribute__((destructor)) exit_console (void);
+#ifndef _MAX_ENV         /* In MSVC's <stdlib.h> */
+#define _MAX_ENV 32767
+#endif
+
+static void setup_console (void);
+static void exit_console (void);
+static void pdc_ncurses_init (void);
 
 static BOOL has_console;
 static BOOL started_from_a_gui;
 static BOOL attached_to_console;
 
-/***************************************/
+static HANDLE stdout_hnd = INVALID_HANDLE_VALUE;
+static CONSOLE_SCREEN_BUFFER_INFO console_info;
 
-static void __init win_init(void)
+#if defined(DETAILED_DEBUG)
+  FILE       *debug_out;
+  const char *debug_fname;
+  unsigned    debug_line;
+#endif
+
+/*
+ * Manually generated list of constructors.
+ * Ref. 'msvc-init.c' in Makefile.Windows.
+ */
+#define INIT_DECODER(func) do { \
+                             extern void func (void);           \
+                             DEBUG_MSG ("calling " #func "()"); \
+                             func();                            \
+                           } while (0)
+
+static void ec_msvc_init(void)
 {
-   /* Dr MingW JIT */
-   LoadLibrary ("exchndl.dll");   
-   setup_console();
-   pdc_ncurses_init();
+#if defined(_MSC_VER) && !defined(BUILDING_UTILS)
+  #if defined(DEBUG)
+    #if defined(DETAILED_DEBUG)
+      BUG_IF (!debug_out);   /* ensure debug_console_init() has been called */
+    #else
+      BUG_IF (!debug_file);  /* ensure debug_init() has been called */
+    #endif
+  #endif
+
+  #include "msvc-init.c"
+#endif /* _MSC_VER && !BUILDING_UTILS */
+}
+
+/*
+ * Called early from main().
+ */
+void ec_win_init(void)
+{
+  ec_msvc_init();
+  setup_console();
+  pdc_ncurses_init();
+  atexit (exit_console);
 }
 
 /*
@@ -118,17 +169,50 @@ u_int16 get_iface_mtu(const char *iface)
       if (adapter) {
          BOOL rc = get_interface_mtu (adapter, &mtu);
 
-         DEBUG_MSG("get_interface_mtu(): mtu %lu, %s", mtu, rc ? "okay" : "failed");
-      
+         DEBUG_MSG("%s(): mtu %lu, %s", __func__, mtu, rc ? "okay" : "failed");
+
          PacketCloseAdapter (adapter);
          if (rc & mtu)
-            return (mtu);
+            return (u_int16) mtu;
       } else
-         DEBUG_MSG("get_interface_mtu(): failed to open iface \"%s\"; %s",
-                iface, ec_win_strerror(GetLastError()));
+         DEBUG_MSG("%s(): failed to open iface \"%s\"; %s",
+                   __func__, iface, ec_win_strerror(GetLastError()));
    }
-   
+
    return (1514);  /* Assume ethernet */
+}
+
+BOOL get_iface_connected_status (const char *iface, int *is_up)
+{
+   ADAPTER *adapter;
+   BOOL  rc;
+
+   struct {
+     PACKET_OID_DATA oidData;
+     BOOL connected;
+   } oid;
+
+   if (!iface)
+     return (FALSE);
+
+   adapter = PacketOpenAdapter ((PCHAR)iface);
+   if (!adapter) {
+      DEBUG_MSG("%s(): failed to open iface \"%s\"; %s",
+                __func__, iface, ec_win_strerror(GetLastError()));
+      return (FALSE);
+   }
+
+   memset(&oid, 0, sizeof(oid));
+   oid.oidData.Oid = OID_GEN_MEDIA_CONNECT_STATUS;
+   oid.oidData.Length = sizeof(oid);
+
+   rc = PacketRequest(adapter, FALSE, &oid.oidData);
+   if (rc)
+     *is_up = *(int*) &oid.oidData.Data;
+
+   PacketCloseAdapter(adapter);
+   DEBUG_MSG("%s(): %s, %s", __func__, rc ? "okay" : "failed", *is_up ? "UP" : "DOWN");
+   return (rc);
 }
 
 void disable_ip_forward(void)
@@ -141,7 +225,7 @@ void restore_ip_forward(void)
    DEBUG_MSG ("restore_ip_forward (no-op)\n");
 }
 
-#ifdef WITH_IPV6
+#if defined(WITH_IPV6)
 void disable_ipv6_forward(void)
 {
    DEBUG_MSG ("disable_ipv6_forward (no-op)\n");
@@ -157,7 +241,7 @@ void restore_ipv6_forward(void)
  * Get and set the read-event associated with the pcap handle. This
  * causes pcap_loop() to terminate (ReadFile hopefully returns 0).
  * Note: this function is called outside the capture thread, so take
- * care not to modify the pcap_handle in any way.
+ * care not to modify the data pointed to by 'pcap_handle' in any way.
  */
 int ec_win_pcap_stop (const void *pcap_handle)
 {
@@ -191,6 +275,9 @@ void set_daemon_interface (void)
 
 int ec_win_gettimeofday (struct timeval *tv, struct timezone *tz)
 {
+#if defined(__MINGW32__)
+   return (gettimeofday) (tv,tz);
+#else
   struct _timeb tb;
 
   if (!tv && !tz) {
@@ -200,7 +287,7 @@ int ec_win_gettimeofday (struct timeval *tv, struct timezone *tz)
 
   _ftime (&tb);
   if (tv) {
-  tv->tv_sec  = tb.time;
+    tv->tv_sec  = (long) tb.time;  /* Truncating from 64-bit to long */
     tv->tv_usec = MILLI2MICRO(tb.millitm);
   }
   if (tz) {
@@ -208,48 +295,64 @@ int ec_win_gettimeofday (struct timeval *tv, struct timezone *tz)
     tz->tz_dsttime = tb.dstflag;
   }
   return (0);
+#endif
 }
 
 /*
  * Use PDcurses' keyboard checker if it's initialised.
+ * Since win_kbhit() is used in poll(), we must push-back the
+ * character using ungetc(). Otherwise the caller of poll() will
+ * hang waiting in it's getchar().
  */
 static int __inline win_kbhit (void)
 {
+  int rc = 0;
+
 #if defined(HAVE_NCURSES) && !defined(BUILDING_UTILS)
-   if ((current_screen.flags & WDG_SCR_INITIALIZED))
-      return PDC_check_bios_key();
+  if ((current_screen.flags & WDG_SCR_INITIALIZED))
+     return PDC_check_bios_key();
 #endif
-   return _kbhit();
+  if (_kbhit())
+     rc = _getch();
+  if (rc)
+     ungetc (rc, stdin);
+  return (rc);
 }
-      
+
 /*
- * A poll() using select() 
+ * A poll() using select()
  */
+#define HOW_MANY(x, y)  ((x + (y - 1)) / y)
+
 int ec_win_poll (struct pollfd *p, int num, int timeout)
 {
   struct timeval tv;
-  int    i, n, ret, num_fd = (num + sizeof(fd_set)-1) / sizeof(fd_set);
-  fd_set read  [num_fd];
-  fd_set write [num_fd];
-  fd_set excpt [num_fd];
+  size_t size = FD_SETSIZE * HOW_MANY(num, FD_SETSIZE);
+  fd_set *read  = alloca (size);
+  fd_set *write = alloca (size);
+  fd_set *excpt = alloca (size);
+  int     i, n = -1, n_socks = 0, ret = 0;
 
-  FD_ZERO (&read);
-  FD_ZERO (&write);
-  FD_ZERO (&excpt);
+  FD_ZERO (read);
+  FD_ZERO (write);
+  FD_ZERO (excpt);
 
-  n = -1;
   for (i = 0; i < num; i++) {
     if (p[i].fd < 0)
        continue;
 
-    if ((p[i].events & POLLIN) && i != STDIN_FILENO)
-        FD_SET (p[i].fd, &read[0]);
+    if ((p[i].events & POLLIN) && i != STDIN_FILENO) {
+       FD_SET (p[i].fd, read);
+       n_socks++;
+    }
 
-    if ((p[i].events & POLLOUT) && i != STDOUT_FILENO)
-        FD_SET (p[i].fd, &write[0]);
+    if ((p[i].events & POLLOUT) && i != STDOUT_FILENO) {
+       FD_SET (p[i].fd, write);
+       n_socks++;
+    }
 
     if (p[i].events & POLLERR)
-       FD_SET (p[i].fd, &excpt[0]);
+       FD_SET (p[i].fd, excpt);
 
     if (p[i].fd > n)
        n = p[i].fd;
@@ -258,22 +361,34 @@ int ec_win_poll (struct pollfd *p, int num, int timeout)
   if (n == -1)
      return (0);
 
-  if (timeout < 0)
-     ret = select (n+1, &read[0], &write[0], &excpt[0], NULL);
-  else {
-    tv.tv_sec  = MILLI2SEC(timeout);
-    tv.tv_usec = MILLI2MICRO((timeout % 1000));
-    ret = select (n+1, &read[0], &write[0], &excpt[0], &tv);
-  }
+  if (n_socks > 0) {
 
-  for (i = 0; ret >= 0 && i < num; i++) {
-    p[i].revents = 0;
-    if (FD_ISSET (p[i].fd, &read[0]))
-       p[i].revents |= POLLIN;
-    if (FD_ISSET (p[i].fd, &write[0]))
-       p[i].revents |= POLLOUT;
-    if (FD_ISSET (p[i].fd, &excpt[0]))
-       p[i].revents |= POLLERR;
+    /* select() in Winsock ignores 'n+1'.
+     */
+    if (timeout < 0)
+       ret = select (n+1, read, write, excpt, NULL);
+    else {
+      tv.tv_sec  = MILLI2SEC(timeout);
+      tv.tv_usec = MILLI2MICRO((timeout % 1000));
+      ret = select (n+1, read, write, excpt, &tv);
+    }
+
+    for (i = 0; ret >= 0 && i < num; i++) {
+      p[i].revents = 0;
+      if (FD_ISSET (p[i].fd, read))
+         p[i].revents |= POLLIN;
+      if (FD_ISSET (p[i].fd, write))
+         p[i].revents |= POLLOUT;
+      if (FD_ISSET (p[i].fd, excpt))
+         p[i].revents |= POLLERR;
+    }
+  }
+  else {
+#if 0
+    DEBUG_MSG ("%s(): n: %d, n_sock = 0, timeout: %d",
+               __func__, n, timeout);
+#endif
+    Sleep (10);
   }
 
   if ((p[STDIN_FILENO].events & POLLIN) && num >= STDIN_FILENO && win_kbhit()) {
@@ -296,12 +411,12 @@ int ec_win_poll (struct pollfd *p, int num, int timeout)
 static char *slashify (char *path)
 {
   char *p;
-  
+
   for (p = strchr(path,'\\'); p && *p; p = strchr(p,'\\'))
       *p++ = '/';
   if (p >= path+2 && *p == '\0' && p[-1] == '/' && p[-2] == '/')
      *(--p) = '\0';
-  
+
   return (path);
 }
 
@@ -311,8 +426,6 @@ static char *slashify (char *path)
  *   - %APPDATA%
  *   - %USERPROFILE%\\Application Data
  *   - else EC's dir.
- *
- * Not used yet.
  */
 const char *ec_win_get_user_dir (void)
 {
@@ -322,15 +435,15 @@ const char *ec_win_get_user_dir (void)
   if (path[0])
      return (path);
 
-  home = getenv ("HOME");
+  home = ec_getenv_expand ("HOME");
   if (home)
      strncpy (path, home, sizeof(path)-1);
   else {
-    home = getenv ("APPDATA");         /* Win-9x/ME */
+    home = ec_getenv_expand ("APPDATA");         /* Win-9x/ME */
     if (home)
        strncpy (path, home, sizeof(path)-1);
     else {
-      home = getenv ("USERPROFILE");   /* Win-2K/XP */
+      home = ec_getenv_expand ("USERPROFILE");   /* Win-2K/XP */
       if (home)
            snprintf (path, sizeof(path)-1, "%s\\Application Data", home);
       else
@@ -347,11 +460,13 @@ const char *ec_win_get_user_dir (void)
 const char *ec_win_get_ec_dir (void)
 {
   static char path[PATH_MAX] = "c:\\";
-  char *slash;
 
-  if (GetModuleFileName(NULL,path,sizeof(path)) &&
-      (slash = strrchr(path,'\\')) != NULL)
-     *slash = '\0';
+  if (GetModuleFileName(NULL,path,sizeof(path))) {
+    char *slash = strrchr(path,'\\');
+
+    if (slash)
+      *slash = '\0';
+  }
   return slashify (path);
 }
 
@@ -677,11 +792,11 @@ int ec_win_dn_expand (const u_char *msg, const u_char *eom_orig,
   }
 
   *dn = '\0';
-  
+
   for (dn = exp_dn; (c = *dn) != '\0'; dn++)
     if (isascii(c) && isspace(c))
       return (-1);
-    
+
   if (len < 0)
      len = cp - comp_dn;
   return (len);
@@ -822,184 +937,179 @@ const char *ec_win_dlerror (void)
 {
   static char errbuf[1024];
 
-   snprintf (errbuf, sizeof(errbuf)-1, "%s(): %s", last_func, ec_win_strerror(last_error));
-   return (errbuf);
+  snprintf (errbuf, sizeof(errbuf)-1, "%s(): %s", last_func, ec_win_strerror(last_error));
+  return (errbuf);
 }
 
 /*
  * This function handles most / all (?) Winsock errors we're able to produce.
  */
-#if !defined(USE_GETTEXT)
-   #undef _
-   #define _(s) s
-#endif
-
 static char *get_winsock_error (int err, char *buf, size_t len)
 {
   char *p;
 
   switch (err) {
     case WSAEINTR:
-        p = _("Call interrupted.");
+        p = "Call interrupted";
         break;
     case WSAEBADF:
-        p = _("Bad file");
+        p = "Bad file";
         break;
     case WSAEACCES:
-        p = _("Bad access");
+        p = "Bad access";
         break;
     case WSAEFAULT:
-        p = _("Bad argument");
+        p = "Bad argument";
         break;
     case WSAEINVAL:
-        p = _("Invalid arguments");
+        p = "Invalid arguments";
         break;
     case WSAEMFILE:
-        p = _("Out of file descriptors");
+        p = "Out of file descriptors";
         break;
     case WSAEWOULDBLOCK:
-        p = _("Call would block");
+        p = "Call would block";
         break;
     case WSAEINPROGRESS:
     case WSAEALREADY:
-        p = _("Blocking call progress");
+        p = "Blocking call progress";
         break;
     case WSAENOTSOCK:
-        p = _("Descriptor is not a socket.");
+        p = "Descriptor is not a socket";
         break;
     case WSAEDESTADDRREQ:
-        p = _("Need destination address");
+        p = "Need destination address";
         break;
     case WSAEMSGSIZE:
-        p = _("Bad message size");
+        p = "Bad message size";
         break;
     case WSAEPROTOTYPE:
-        p = _("Bad protocol");
+        p = "Bad protocol";
         break;
     case WSAENOPROTOOPT:
-        p = _("Protocol option is unsupported");
+        p = "Protocol option is unsupported";
         break;
     case WSAEPROTONOSUPPORT:
-        p = _("Protocol is unsupported");
+        p = "Protocol is unsupported";
         break;
     case WSAESOCKTNOSUPPORT:
-        p = _("Socket is unsupported");
+        p = "Socket is unsupported";
         break;
     case WSAEOPNOTSUPP:
-        p = _("Operation not supported");
+        p = "Operation not supported";
         break;
     case WSAEAFNOSUPPORT:
-        p = _("Address family not supported");
+        p = "Address family not supported";
         break;
     case WSAEPFNOSUPPORT:
-        p = _("Protocol family not supported");
+        p = "Protocol family not supported";
         break;
     case WSAEADDRINUSE:
-        p = _("Address already in use");
+        p = "Address already in use";
         break;
     case WSAEADDRNOTAVAIL:
-        p = _("Address not available");
+        p = "Address not available";
         break;
     case WSAENETDOWN:
-        p = _("Network down");
+        p = "Network down";
         break;
     case WSAENETUNREACH:
-        p = _("Network unreachable");
+        p = "Network unreachable";
         break;
     case WSAENETRESET:
-        p = _("Network has been reset");
+        p = "Network has been reset";
         break;
     case WSAECONNABORTED:
-        p = _("Connection was aborted");
+        p = "Connection was aborted";
         break;
     case WSAECONNRESET:
-        p = _("Connection was reset");
+        p = "Connection was reset";
         break;
     case WSAENOBUFS:
-        p = _("No buffer space");
+        p = "No buffer space";
         break;
     case WSAEISCONN:
-        p = _("Socket is already connected");
+        p = "Socket is already connected";
         break;
     case WSAENOTCONN:
-        p = _("Socket is not connected");
+        p = "Socket is not connected";
         break;
     case WSAESHUTDOWN:
-        p = _("Socket has been shut down");
+        p = "Socket has been shut down";
         break;
     case WSAETOOMANYREFS:
-        p = _("Too many references");
+        p = "Too many references";
         break;
     case WSAETIMEDOUT:
-        p = _("Timed out");
+        p = "Timed out";
         break;
     case WSAECONNREFUSED:
-        p = _("Connection refused");
+        p = "Connection refused";
         break;
     case WSAELOOP:
-        p = _("Loop??");
+        p = "Loop??";
         break;
     case WSAENAMETOOLONG:
-        p = _("Name too long");
+        p = "Name too long";
         break;
     case WSAEHOSTDOWN:
-        p = _("Host down");
+        p = "Host down";
         break;
     case WSAEHOSTUNREACH:
-        p = _("Host unreachable");
+        p = "Host unreachable";
         break;
     case WSAENOTEMPTY:
-        p = _("Not empty");
+        p = "Not empty";
         break;
     case WSAEPROCLIM:
-        p = _("Process limit reached");
+        p = "Process limit reached";
         break;
     case WSAEUSERS:
-        p = _("Too many users");
+        p = "Too many users";
         break;
     case WSAEDQUOT:
-        p = _("Bad quota");
+        p = "Bad quota";
         break;
     case WSAESTALE:
-        p = _("Something is stale");
+        p = "Something is stale";
         break;
     case WSAEREMOTE:
-        p = _("Remote error");
+        p = "Remote error";
         break;
     case WSAEDISCON:
-        p = _("Disconnected");
+        p = "Disconnected";
         break;
 
     /* Extended Winsock errors */
     case WSASYSNOTREADY:
-        p = _("Winsock library is not ready");
+        p = "Winsock library is not ready";
         break;
     case WSANOTINITIALISED:
-        p = _("Winsock library not initalised");
+        p = "Winsock library not initalised";
         break;
     case WSAVERNOTSUPPORTED:
-        p = _("Winsock version not supported.");
+        p = "Winsock version not supported";
         break;
 
     /* getXbyY() errors (already handled in herrmsg):
        Authoritative Answer: Host not found */
     case WSAHOST_NOT_FOUND:
-        p = _("Host not found");
+        p = "Host not found";
         break;
 
     /* Non-Authoritative: Host not found, or SERVERFAIL */
     case WSATRY_AGAIN:
-        p = _("Host not found, try again");
+        p = "Host not found, try again";
         break;
 
     /* Non recoverable errors, FORMERR, REFUSED, NOTIMP */
     case WSANO_RECOVERY:
-        p = _("Unrecoverable error in call to nameserver");
+        p = "Unrecoverable error in call to nameserver";
         break;
 
     /* Valid name, no data record of requested type */
     case WSANO_DATA:
-        p = _("No data record of requested type");
+        p = "No data record of requested type";
         break;
 
     default:
@@ -1010,6 +1120,59 @@ static char *get_winsock_error (int err, char *buf, size_t len)
   return buf;
 }
 
+/*
+ * This function handles the errnos from pthreads.
+ * Look in <pthreads.h> for the values of these. Some may overlap
+ * with system's 'sys_errlist[]', but that's not important since
+ * get_pthreads_error() is called after 'sys_errlist[]' is looked up.
+ */
+static char *get_pthreads_error (int err, char *buf, size_t len)
+{
+  char *p;
+
+  switch (err) {
+#ifdef ENOTSUP
+    case ENOTSUP:
+        p = "Function not supported";
+        break;
+#endif
+#ifdef ETIMEDOUT
+    case ETIMEDOUT:
+        p = "Connection timed out";
+        break;
+#endif
+
+#ifdef ENOSYS
+    case ENOSYS:
+        p = "Function not implemented";
+        break;
+#endif
+
+#ifdef EDEADLK
+    case EDEADLK:
+        p = "Resource deadlock avoided";
+        break;
+#endif
+
+#ifdef EOWNERDEAD
+    case EOWNERDEAD:
+        p = "Father killed himself";
+        break;
+#endif
+
+#ifdef ENOTRECOVERABLE
+    case ENOTRECOVERABLE:
+        p = "Unrecoverable error";
+        break;
+#endif
+    default:
+        return NULL;
+  }
+
+  strncpy (buf, p, len);
+  buf [len-1] = '\0';
+  return (buf);
+}
 
 /*
  * A smarter strerror()
@@ -1018,8 +1181,8 @@ static char *get_winsock_error (int err, char *buf, size_t len)
 char *ec_win_strerror (int err)
 {
   static char buf[512];
-   
-  
+
+
   DWORD  lang  = MAKELANGID (LANG_NEUTRAL, SUBLANG_DEFAULT);
   DWORD  flags = FORMAT_MESSAGE_FROM_SYSTEM |
                  FORMAT_MESSAGE_IGNORE_INSERTS |
@@ -1033,24 +1196,72 @@ char *ec_win_strerror (int err)
   }
   else
   {
-  if (!get_winsock_error (err, buf, sizeof(buf)) &&
+    if (!get_pthreads_error (err, buf, sizeof(buf)) &&
+        !get_winsock_error (err, buf, sizeof(buf)) &&
         !FormatMessage (flags, NULL, err,
                         lang, buf, sizeof(buf)-1, NULL))
      snprintf (buf, 512, "Unknown error %d (%#x)", err, err);
   }
-            
+
 
   /* strip trailing '\r\n' or '\n'. */
-  p = strrchr (buf, '\n'); 
+  p = strrchr (buf, '\n');
   if (p && (p - buf) >= 2)
      *p = '\0';
-  
-  p = strrchr (buf, '\r'); 
+
+  p = strrchr (buf, '\r');
   if (p && (p - buf) >= 1)
      *p = '\0';
-  
+
   return (buf);
 }
+
+/*
+ * A smarter getenv().
+ *
+ * Returns the expanded version of an environment variable.
+ * Stolen from curl. But I wrote the Win32 part of it...
+ *
+ * E.g. If "$INCLUDE" is "c:\VC\include;%C_INCLUDE_PATH%" and
+ * "$C_INCLUDE_PATH=c:\MinGW\include", the expansion returns
+ * "c:\VC\include;c:\MinGW\include". Note that Windows (cmd only?)
+ * requires a trailing '%' in "$C_INCLUDE_PATH".
+ */
+#undef getenv
+char *ec_getenv_expand (const char *variable)
+{
+  const char *orig_var = variable;
+  char *rc, *env = NULL;
+  char  buf1[_MAX_ENV], buf2[_MAX_ENV];  /* _MAX_ENV = 32kB */
+  DWORD ret;
+
+  /* Don't use getenv(); it doesn't find variable added after program was
+   * started. Don't accept truncated results (i.e. rc >= sizeof(buf1)).
+   */
+  ret = GetEnvironmentVariable (variable, buf1, sizeof(buf1));
+  if (ret > 0 && ret < sizeof(buf1))
+  {
+    env = buf1;
+    variable = buf1;
+  }
+  if (strchr(variable,'%'))
+  {
+    /* buf2 == variable if not expanded */
+    ret = ExpandEnvironmentStrings (variable, buf2, sizeof(buf2));
+    if (ret > 0 && ret < sizeof(buf2) &&
+        !strchr(buf2,'%'))    /* no variables still un-expanded */
+      env = buf2;
+  }
+
+  if (env)
+    SAFE_STRDUP(rc, env);
+  else
+    rc = NULL;
+
+  // DEBUG_MSG ("env: '%s', expanded: '%s'\n", orig_var, rc);
+  return (rc);
+}
+
 
 #if defined(HAVE_NCURSES) && !defined(BUILDING_UTILS)
 int vwprintw (WINDOW *win, const char *fmt, va_list args)
@@ -1067,7 +1278,7 @@ int vwprintw (WINDOW *win, const char *fmt, va_list args)
 static void pdc_ncurses_init (void)
 {
 #if defined(HAVE_NCURSES) && !defined(BUILDING_UTILS)
-  const char *env = getenv ("CURSES_TRACE");
+  const char *env = ec_getenv_expand ("CURSES_TRACE");
 
   if (env && atoi(env) > 0) {
     traceon();
@@ -1089,6 +1300,35 @@ static void pdc_ncurses_init (void)
 #endif
 }
 
+#if !defined(BUILDING_UTILS) && defined(IM_A_GUI_APP) && 0
+
+/*
+ * Taken from WireShark's ui/gtk/main.c:
+ *
+ * We probably build this as a GUI subsystem application on Win32,
+ * so "WinMain()", not "main()", gets called.
+ *
+ * Hack shamelessly stolen from the Win32 port of the GIMP.
+ */
+extern int __cdecl main (int argc, const char **argv);
+
+#if defined(__MINGW32__) && !defined(__argc)
+  extern int  *   __cdecl __MINGW_NOTHROW __p___argc (void);
+  extern char *** __cdecl __MINGW_NOTHROW __p___argv (void);
+
+  #define __argc (*__p___argc())
+  #define __argv (*__p___argv())
+#endif
+
+int WINAPI
+WinMain (struct HINSTANCE__ *hInstance,
+         struct HINSTANCE__ *hPrevInstance,
+         char               *lpszCmdLine,
+         int                 nCmdShow)
+{
+  return main (__argc, __argv);
+}
+
 /*
  * Check if we're linked as a GUI app.
  */
@@ -1102,6 +1342,7 @@ static BOOL is_gui_app (void)
   nt  = (const IMAGE_NT_HEADERS*) ((const BYTE*)mod + dos->e_lfanew);
   return (nt->OptionalHeader.Subsystem == IMAGE_SUBSYSTEM_WINDOWS_GUI);
 }
+#endif
 
 /*
  * Check that we're linked as a GUI application. Depending on how
@@ -1111,7 +1352,10 @@ static BOOL is_gui_app (void)
  */
 static void setup_console (void)
 {
-#if !defined(BUILDING_UTILS)
+  /* If this is compiled for an utils program or not linked as
+   * a GUI-app (-Wl,--subsystem,windows), then no need to do this.
+   */
+#if !defined(BUILDING_UTILS) && defined(IM_A_GUI_APP)
   BOOL (WINAPI *_AttachConsole)(DWORD) = NULL;
   HMODULE mod;
   DWORD   rc = 0;
@@ -1125,25 +1369,28 @@ static void setup_console (void)
 
   /* Note: this is true even when started minimized
    * (nCmdShow == SW_MINIMISED), but fails if program started as
-   * another user
+   * another user.
    */
   memset (&inf, 0, sizeof(inf));
   GetStartupInfo (&inf);
 
   started_from_a_gui = (inf.dwFlags & STARTF_USESHOWWINDOW);
 
-  /* check if correct linker option used
+#if !defined(DETAILED_DEBUG) && 0
+  /*
+   * Check if correct linker option used
    */
   if (!is_gui_app()) {
      MessageBox (NULL, "You must relink this application with\n"
-                 "\"-Wl,--subsystem,windows\"\n", "Error",
+                 "\"-Wl,--subsystem,windows\"\n", "Ettercap",
                  MB_ICONEXCLAMATION | MB_SETFOREGROUND);
      exit (-1);
   }
+#endif
 
   mod = GetModuleHandle ("kernel32.dll");
   if (mod)
-     _AttachConsole = (BOOL (WINAPI*)(DWORD)) GetProcAddress((HINSTANCE)mod, "AttachConsole");
+     _AttachConsole = (BOOL (WINAPI*)(DWORD)) GetProcAddress ((HINSTANCE)mod, "AttachConsole");
 
   attached_to_console = FALSE;
 
@@ -1160,29 +1407,31 @@ static void setup_console (void)
   }
 
   if (!attached_to_console && !AllocConsole()) {
-     char error[256];
+#if defined(DETAILED_DEBUG) && 0
+     char  error[256];
+     DWORD err = GetLastError();
 
-     snprintf (error, 256, "AllocConsole failed; error %lu", GetLastError());
-     MessageBox (NULL, error, "Fatal", MB_ICONEXCLAMATION | MB_SETFOREGROUND);
-     exit (-1);
+     snprintf (error, 256, "AllocConsole failed; %s (%lu)", ec_win_strerror(err), err);
+     MessageBox (NULL, error, "Ettercap", MB_ICONEXCLAMATION | MB_SETFOREGROUND);
+#endif
+
+     attached_to_console = TRUE;  /* Ignore */
   }
 
   /* Synchronise std-handles with the new console
    */
-  freopen ("CONIN$", "rt", stdin);
-  freopen ("CONOUT$", "wt", stdout);
-  freopen ("CONOUT$", "wt", stderr);
+  freopen ("CONIN$", "rt,ccs=UNICODE", stdin);
+  freopen ("CONOUT$", "wt,ccs=UNICODE", stdout);
+  freopen ("CONOUT$", "wt,ccs=UNICODE", stderr);
 
-#if 0
-  printf ("_AttachConsole %p, rc %lu, started_from_a_gui %d, attached_to_console %d\n",
-          _AttachConsole, rc, started_from_a_gui, attached_to_console);
-#endif
+  DEBUG_MSG ("_AttachConsole %p, rc %lu, started_from_a_gui %d, attached_to_console %d.",
+             _AttachConsole, rc, started_from_a_gui, attached_to_console);
 
   has_console = TRUE;
-#endif /* BUILDING_UTILS */
+#endif /* !BUILDING_UTILS && IM_A_GUI_APP */
 }
 
-static void __attribute__((destructor)) exit_console (void)
+static void exit_console (void)
 {
 #if !defined(BUILDING_UTILS)
   if (!has_console)
@@ -1197,7 +1446,7 @@ static void __attribute__((destructor)) exit_console (void)
      * The calling shell doesn't append a <CR> to the cmd-line when we exit a
      * GUI app. Get the prompt back by putting a <CR> in the console input queue.
      */
-    HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
+    HANDLE hStdin = GetStdHandle (STD_INPUT_HANDLE);
 
     if (!started_from_a_gui && hStdin != INVALID_HANDLE_VALUE) {
       INPUT_RECORD rec;
@@ -1209,7 +1458,7 @@ static void __attribute__((destructor)) exit_console (void)
       rec.Event.KeyEvent.wRepeatCount = 1;
       rec.Event.KeyEvent.wVirtualKeyCode = 13;
       rec.Event.KeyEvent.uChar.AsciiChar = 13;
-      WriteConsoleInput(hStdin, &rec, 1, &written);
+      WriteConsoleInput (hStdin, &rec, 1, &written);
     }
   }
   FreeConsole();  /* free allocated or attached console */
@@ -1217,15 +1466,51 @@ static void __attribute__((destructor)) exit_console (void)
 #endif
 }
 
-int inet_pton (int af, const char *src, void *dst)
+static unsigned trace_init (void)
 {
-    if (af != AF_INET) {
-      errno = WSAEAFNOSUPPORT;
-      return -1;
-    }
-    return inet_aton (src, dst);
+  const char *env = getenv ("EC_DEBUG");
+
+  stdout_hnd = GetStdHandle (STD_OUTPUT_HANDLE);
+  GetConsoleScreenBufferInfo (stdout_hnd, &console_info);
+
+  if (env)
+     return atoi (env);
+  return (0);
 }
 
+static __inline void set_fore_colour (unsigned col)
+{
+  if (col == 0)
+       SetConsoleTextAttribute (stdout_hnd, console_info.wAttributes);
+  else SetConsoleTextAttribute (stdout_hnd, (console_info.wAttributes & ~7) | col);
+}
+
+#define TRACE_PROLOGUE (FOREGROUND_INTENSITY + 3)                                  /* Bright cyan */
+#define TRACE_COLOR    (FOREGROUND_INTENSITY | FOREGROUND_GREEN | FOREGROUND_RED)  /* Yellow */
+
+void ec_trace (const char *fmt, ...)
+{
+  static int init = 0;
+  va_list args;
+
+  if (!init) {
+    ec_trace_level = trace_init();
+    init = 1;
+  }
+
+  if (ec_trace_level == 0)
+     return;
+
+  set_fore_colour (TRACE_PROLOGUE);
+  printf ("%s(%u): ", ec_trace_file, ec_trace_line);
+  set_fore_colour (TRACE_COLOR);
+
+  va_start (args, fmt);
+  vprintf (fmt, args);
+  va_end (args);
+  puts ("");
+  set_fore_colour (0);
+}
 
 /* EOF */
 

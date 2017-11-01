@@ -63,10 +63,10 @@ char * ec_thread_getname(pthread_t id)
       id = pthread_self();
 
    /* don't lock here to avoid deadlock in debug messages */
-#ifndef DEBUG   
+#ifndef DEBUG
    THREADS_LOCK;
 #endif
-   
+
    LIST_FOREACH(current, &thread_list_head, next) {
       if (pthread_equal(current->t.id, id)) {
          name = current->t.name;
@@ -76,7 +76,7 @@ char * ec_thread_getname(pthread_t id)
          return name;
       }
    }
-   
+
 #ifndef DEBUG
    THREADS_UNLOCK;
 #endif
@@ -84,8 +84,8 @@ char * ec_thread_getname(pthread_t id)
    return "NR_THREAD";
 }
 
-/* 
- * returns the pid of a thread 
+/*
+ * returns the pid of a thread
  * ZERO if not found !! (take care, not -E_NOTFOUND !)
  */
 
@@ -93,7 +93,7 @@ pthread_t ec_thread_getpid(char *name)
 {
    struct thread_list *current;
    pthread_t pid;
-   
+
    THREADS_LOCK;
 
    LIST_FOREACH(current, &thread_list_head, next) {
@@ -105,7 +105,7 @@ pthread_t ec_thread_getpid(char *name)
    }
 
    THREADS_UNLOCK;
-  
+
    return EC_PTHREAD_NULL;
 }
 
@@ -118,9 +118,9 @@ char * ec_thread_getdesc(pthread_t id)
 
    if (pthread_equal(id, EC_PTHREAD_SELF))
       id = pthread_self();
-  
+
    THREADS_LOCK;
-   
+
    LIST_FOREACH(current, &thread_list_head, next) {
       if (pthread_equal(current->t.id, id)) {
          desc = current->t.description;
@@ -128,9 +128,9 @@ char * ec_thread_getdesc(pthread_t id)
          return desc;
       }
    }
-   
+
    THREADS_UNLOCK;
-   
+
    return "";
 }
 
@@ -147,18 +147,18 @@ void ec_thread_register_detached(pthread_t id, char *name, char *desc, int detac
 
    if (pthread_equal(id, EC_PTHREAD_SELF))
       id = pthread_self();
-   
-   DEBUG_MSG("ec_thread_register -- [%lu] %s", PTHREAD_ID(id), name);
+
+   DEBUG_MSG("ec_thread_register -- [%lu] %s", PTHREAD_NUM(id), name);
 
    SAFE_CALLOC(newelem, 1, sizeof(struct thread_list));
-              
+
    newelem->t.id = id;
    newelem->t.name = strdup(name);
    newelem->t.description = strdup(desc);
    newelem->t.detached = detached;
 
    THREADS_LOCK;
-   
+
    LIST_FOREACH(current, &thread_list_head, next) {
       if (pthread_equal(current->t.id, id)) {
          SAFE_FREE(current->t.name);
@@ -171,9 +171,9 @@ void ec_thread_register_detached(pthread_t id, char *name, char *desc, int detac
    }
 
    LIST_INSERT_HEAD(&thread_list_head, newelem, next);
-   
+
    THREADS_UNLOCK;
-   
+
 }
 
 /*
@@ -189,15 +189,15 @@ pthread_t ec_thread_new_detached(char *name, char *desc, void *(*function)(void 
    pthread_t id;
    int e;
 
-   DEBUG_MSG("ec_thread_new -- %s detached %d", name, detached);
+   DEBUG_MSG("ec_thread_new -- \"%s\" detached %d", name, detached);
 
-   /* 
+   /*
     * lock the mutex to syncronize with the new thread.
     * the newly created thread will call ec_thread_init(),
-    * so at the end of this function we are sure that the 
+    * so at the end of this function we are sure that the
     * thread had be initialized
     */
-   INIT_LOCK; 
+   INIT_LOCK;
 
    if (detached == DETACHED_THREAD) {
       pthread_attr_t attr;
@@ -212,41 +212,41 @@ pthread_t ec_thread_new_detached(char *name, char *desc, void *(*function)(void 
 
    ec_thread_register_detached(id, name, desc, detached);
 
-   DEBUG_MSG("ec_thread_new -- %lu created ", PTHREAD_ID(id));
+   DEBUG_MSG("ec_thread_new -- %lu created ", PTHREAD_NUM(id));
 
    if ((e = pthread_cond_wait(&init_cond, &init_mtx)))
       ERROR_MSG("waiting on init_cond: %s", strerror(e));
    INIT_UNLOCK;
-   
+
    return id;
 }
 
-/* 
- * set the state of a thread 
+/*
+ * set the state of a thread
  * all the new thread MUST call this on startup
  */
 void ec_thread_init(void)
 {
    pthread_t id = pthread_self();
    int e;
-   
-   DEBUG_MSG("ec_thread_init -- %lu", PTHREAD_ID(id));
+
+   DEBUG_MSG("ec_thread_init -- %lu", PTHREAD_NUM(id));
 
    INIT_LOCK;
-   
-   /* 
+
+   /*
     * allow a thread to be cancelled as soon as the
     * cancellation  request  is received
     */
    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
    pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
-   /* sync with the creator */ 
+   /* sync with the creator */
    if ((e = pthread_cond_signal(&init_cond)))
       ERROR_MSG("raising init_cond: %s", strerror(e));
    INIT_UNLOCK;
-   
-   DEBUG_MSG("ec_thread_init -- (%lu) ready and syncronized",  PTHREAD_ID(id));
+
+   DEBUG_MSG("ec_thread_init -- (%lu) ready and syncronized",  PTHREAD_NUM(id));
 }
 
 /*
@@ -258,18 +258,17 @@ void ec_thread_destroy(pthread_t id)
 
    if (pthread_equal(id, EC_PTHREAD_SELF))
       id = pthread_self();
-   
-   DEBUG_MSG("ec_thread_destroy -- terminating %lu [%s]", PTHREAD_ID(id), ec_thread_getname(id));
+
+   DEBUG_MSG("ec_thread_destroy -- terminating %lu [%s]", PTHREAD_NUM(id), ec_thread_getname(id));
 
 
    /* send the cancel signal to the thread */
-   pthread_cancel((pthread_t)id);
-
+   pthread_cancel(PTHREAD_ID(id));
 
    DEBUG_MSG("ec_thread_destroy -- [%s] terminated", ec_thread_getname(id));
-   
+
    THREADS_LOCK;
-   
+
    LIST_FOREACH(current, &thread_list_head, next) {
       if (pthread_equal(current->t.id, id)) {
 #ifndef BROKEN_PTHREAD_JOIN
@@ -278,7 +277,7 @@ void ec_thread_destroy(pthread_t id)
             /* wait until it has finished */
             pthread_join((pthread_t)id, NULL);
          }
-#endif         
+#endif
          SAFE_FREE(current->t.name);
          SAFE_FREE(current->t.description);
          LIST_REMOVE(current, next);
@@ -303,7 +302,7 @@ void ec_thread_kill_all(void)
    struct thread_list *current, *old;
    pthread_t id = pthread_self();
 
-   DEBUG_MSG("ec_thread_kill_all -- caller %lu [%s]", PTHREAD_ID(id), ec_thread_getname(id));
+   DEBUG_MSG("ec_thread_kill_all -- caller %lu [%s]", PTHREAD_NUM(id), ec_thread_getname(id));
 
    THREADS_LOCK;
 
@@ -312,32 +311,32 @@ void ec_thread_kill_all(void)
    if (GBL_IFACE->pcap)
       ec_win_pcap_stop(GBL_IFACE->pcap);
 #endif
-   
+
    LIST_FOREACH_SAFE(current, &thread_list_head, next, old) {
       /* skip ourself */
       if (!pthread_equal(current->t.id, id)) {
-         DEBUG_MSG("ec_thread_kill_all -- terminating %lu [%s]", PTHREAD_ID(current->t.id), current->t.name);
+         DEBUG_MSG("ec_thread_kill_all -- terminating %lu [%s]", PTHREAD_NUM(current->t.id), current->t.name);
 
          /* send the cancel signal to the thread */
-         pthread_cancel((pthread_t)current->t.id);
-         
+         pthread_cancel(PTHREAD_ID(current->t.id));
+
 #ifndef BROKEN_PTHREAD_JOIN
          if (!current->t.detached) {
             DEBUG_MSG("ec_thread_destroy: pthread_join");
             /* wait until it has finished */
             pthread_join(current->t.id, NULL);
          }
-#endif         
+#endif
 
          DEBUG_MSG("ec_thread_kill_all -- [%s] terminated", current->t.name);
-      
+
          SAFE_FREE(current->t.name);
          SAFE_FREE(current->t.description);
          LIST_REMOVE(current, next);
          SAFE_FREE(current);
       }
    }
-   
+
    THREADS_UNLOCK;
 }
 
@@ -349,10 +348,10 @@ void ec_thread_exit(void)
    struct thread_list *current, *old;
    pthread_t id = pthread_self();
 
-   DEBUG_MSG("ec_thread_exit -- caller %lu [%s]", PTHREAD_ID(id), ec_thread_getname(id));
+   DEBUG_MSG("ec_thread_exit -- caller %lu [%s]", PTHREAD_NUM(id), ec_thread_getname(id));
 
    THREADS_LOCK;
-   
+
    LIST_FOREACH_SAFE(current, &thread_list_head, next, old) {
       /* delete our entry */
       if (pthread_equal(current->t.id, id)) {
@@ -375,7 +374,7 @@ void ec_thread_exit(void)
 
    /* perform a clean exit of the thread */
    pthread_exit(0);
-   
+
 }
 
 /* EOF */

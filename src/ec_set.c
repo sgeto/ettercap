@@ -39,7 +39,7 @@
 
 
 /* set functions */
-void set_mitm(char *mitm) 
+void set_mitm(char *mitm)
 {
 	GBL_OPTIONS->mitm = 1;
 	if(mitm_set(mitm) != E_SUCCESS)
@@ -145,8 +145,8 @@ void set_filter(char *end, const char *filter)
 	if ( (end-filter >=2) && *(end-2) == ':') {
 		*(end-2) = '\0';
 		f_enabled = !( *(end-1) == '0' );
-	}	
-	
+	}
+
 	if (filter_load_file(filter, GBL_FILTERS, f_enabled) != E_SUCCESS)
 		FATAL_ERROR("Cannot load filter file \"%s\"", filter);
 }
@@ -172,6 +172,7 @@ void set_loglevel_true(char *arg)
 
 void set_compress(void)
 {
+	DEBUG_MSG("set_compress()");
 	GBL_OPTIONS->compress = 1;
 }
 
@@ -241,7 +242,7 @@ void set_save_hosts(char *file)
 void opt_set_format(char *format)
 {
 	if (set_format(format) != E_SUCCESS)
-		clean_exit(-E_FATAL);	
+		clean_exit(-E_FATAL);
 }
 
 void set_ext_headers(void)

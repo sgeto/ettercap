@@ -8,11 +8,11 @@
    #include <pcre.h>
 #endif
 
-/* 
+/*
  * this is the struct used by the filtering engine
  * it is the equivalent of a processor's instruction
  *
- * they are organized in an array and evaluated one 
+ * they are organized in an array and evaluated one
  * at a time. the jump are absolute and the addressing
  * is done by the array position.
  *
@@ -52,20 +52,20 @@ struct filter_op {
             #define FFUNC_MSG       8
             #define FFUNC_EXEC      9
             #define FFUNC_EXECINJECT 10
-         u_int8 level; 
+         u_int8 level;
          u_int8 *string;
          size_t slen;
          u_int8 *replace;
          size_t rlen;
          struct regex_opt *ropt;
       } func;
-      
+
       /* tests */
       struct {
          u_int8   op;
             #define FTEST_EQ   0
             #define FTEST_NEQ  1
-            #define FTEST_LT   2   
+            #define FTEST_LT   2
             #define FTEST_GT   3
             #define FTEST_LEQ  4
             #define FTEST_GEQ  5
@@ -80,11 +80,11 @@ struct filter_op {
 
       /* jumps */
       u_int16 jmp;
-      
+
    } op;
 };
 
-/* the header for a binary filter file 
+/* the header for a binary filter file
  *
  * a file is structured as follow:
  *    the header
@@ -96,7 +96,7 @@ struct filter_op {
  */
 struct filter_header {
    /* magic number */
-   u_int16 magic; 
+   u_int16 magic;
       #define EC_FILTER_MAGIC 0xe77e
    /* ettercap version */
    char version[16];
@@ -107,7 +107,7 @@ struct filter_header {
 
 /* filters header for mmapped region */
 struct filter_env {
-   void *map;
+   char *map;
    struct filter_op *chain;
    size_t len;
 };
@@ -125,13 +125,13 @@ struct regex_opt {
    regex_t *regex;
 #ifdef HAVE_PCRE
    pcre *pregex;
-   pcre_extra *preg_extra;   
+   pcre_extra *preg_extra;
 #endif
 };
 
 #define PCRE_OVEC_SIZE 100
 
-void filter_init_mutex(void);
+EC_API_EXTERN void filter_init_mutex(void);
 
 /* exported functions */
 

@@ -4,7 +4,7 @@
 struct ec_session {
    void *ident;
    size_t ident_len;
-   void *data;
+   char  *data;
    size_t data_len;
    int flag; /* misc. boolean flag */
    /* Used to trace headers for injection */
@@ -18,7 +18,7 @@ EC_API_EXTERN int session_get(struct ec_session **s, void *ident, size_t ident_l
 EC_API_EXTERN int session_del(void *ident, size_t ident_len);
 EC_API_EXTERN int session_get_and_del(struct ec_session **s, void *ident, size_t ident_len);
 EC_API_EXTERN void session_free(struct ec_session *s);
-   
+
 
 #endif
 

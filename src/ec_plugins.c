@@ -43,7 +43,7 @@
 #else
    #define SYM_PREFIX ""
 #endif
-         
+
 
 /* global data */
 
@@ -79,21 +79,21 @@ int plugin_filter(const struct dirent *d);
 
 /*******************************************/
 
-/* 
+/*
  * load a plugin given the full path
  */
 
 int plugin_load_single(const char *path, char *name)
 {
 #ifdef HAVE_PLUGINS
-   char file[strlen(path)+strlen(name)+2];
+   char file [PATH_MAX];
    void *handle;
    int (*plugin_load)(void *);
-   
+
    snprintf(file, sizeof(file), "%s/%s", path, name);
-  
+
    DEBUG_MSG("plugin_load_single: %s", file);
-   
+
    /* load the plugin */
    handle = dlopen(file, RTLD_NOW|RTLD_LOCAL);
 
@@ -101,20 +101,20 @@ int plugin_load_single(const char *path, char *name)
       DEBUG_MSG("plugin_load_single - %s - dlopen() | %s", file, dlerror());
       return -E_INVALID;
    }
-   
+
    /* find the loading function */
    plugin_load = dlsym(handle, SYM_PREFIX "plugin_load");
-   
+
    if (plugin_load == NULL) {
       DEBUG_MSG("plugin_load_single - %s - lt_dlsym() | %s", file, dlerror());
       dlclose(handle);
       return -E_INVALID;
    }
 
-   /* 
-    * return the same value of plugin_register 
+   /*
+    * return the same value of plugin_register
     * we pass the handle to the plugin, which
-    * in turn passes it to the plugin_register 
+    * in turn passes it to the plugin_register
     * function
     */
    return plugin_load(handle);
@@ -151,7 +151,7 @@ void plugin_load_all(void)
    int n, i, ret;
    int t = 0;
    char *where;
-   
+
    DEBUG_MSG("plugin_loadall");
 
 #ifdef OS_WINDOWS
@@ -166,7 +166,7 @@ void plugin_load_all(void)
    /* default path */
    where = INSTALL_LIBDIR "/" EC_PROGRAM;
 #endif
-   
+
    /* first search in  INSTALL_LIBDIR/ettercap" */
    n = scandir(where, &namelist, plugin_filter, alphasort);
    /* on error fall back to the current dir */
@@ -177,8 +177,8 @@ void plugin_load_all(void)
       n = scandir(where, &namelist, plugin_filter, alphasort);
       DEBUG_MSG("plugin_loadall: %d found", n);
    }
-  
-   for(i = n-1; i >= 0; i--) {
+
+   for(i = 0; i < n; i++) {
       ret = plugin_load_single(where, namelist[i]->d_name);
       switch (ret) {
          case E_SUCCESS:
@@ -200,11 +200,11 @@ void plugin_load_all(void)
       }
       SAFE_FREE(namelist[i]);
    }
-   
+
    USER_MSG("%4d plugins\n", t);
 
    SAFE_FREE(namelist);
-   
+
    atexit(plugin_unload_all);
 #else
    USER_MSG("   0 plugins (disabled by configure...)\n");
@@ -219,9 +219,9 @@ void plugin_unload_all(void)
 {
 #ifdef HAVE_PLUGINS
    struct plugin_entry *p;
-   
-   DEBUG_MSG("ATEXIT: plugin_unload_all");   
-   
+
+   DEBUG_MSG("ATEXIT: plugin_unload_all");
+
    while (SLIST_FIRST(&plugin_head) != NULL) {
       p = SLIST_FIRST(&plugin_head);
       if(plugin_is_activated(p->ops->name) == 1)
@@ -247,7 +247,7 @@ int plugin_register(void *handle, struct plugin_ops *ops)
       dlclose(handle);
       return -E_VERSION;
    }
-   
+
    /* check that this plugin was not already loaded */
    SLIST_FOREACH(pl, &plugin_head, next) {
       /* same name and same version */
@@ -258,7 +258,7 @@ int plugin_register(void *handle, struct plugin_ops *ops)
    }
 
    SAFE_CALLOC(p, 1, sizeof(struct plugin_entry));
-   
+
    p->handle = handle;
    p->ops = ops;
 
@@ -273,9 +273,9 @@ int plugin_register(void *handle, struct plugin_ops *ops)
 }
 
 
-/* 
+/*
  * activate a plugin.
- * it launch the plugin init function 
+ * it launch the plugin init function
  */
 int plugin_init(char *name)
 {
@@ -292,14 +292,14 @@ int plugin_init(char *name)
          return ret;
       }
    }
-   
+
    return -E_NOTFOUND;
 }
 
 
-/* 
+/*
  * deactivate a plugin.
- * it launch the plugin fini function 
+ * it launch the plugin fini function
  */
 int plugin_fini(char *name)
 {
@@ -316,11 +316,11 @@ int plugin_fini(char *name)
          return ret;
       }
    }
-   
+
    return -E_NOTFOUND;
 }
 
-/* 
+/*
  * self-destruct a plugin thread.
  * it resets the activity state and destructs itself by calling the plugin fini function.
  * it does not replace the <plugin>_fini standard function rather than it depends on it.
@@ -332,7 +332,7 @@ int plugin_kill_thread(char *name, char *thread)
    int ret;
    pthread_t pid;
 
-   pid = ec_thread_getpid(thread); 
+   pid = ec_thread_getpid(thread);
 
    /* do not execute if not being a thread */
    if (pthread_equal(pid, EC_PTHREAD_NULL))
@@ -356,9 +356,9 @@ int plugin_kill_thread(char *name, char *thread)
          /* call plugin's destruction routine */
          ret = p->ops->fini(NULL);
          /*
-          * normally the thread should not return from the call - 
+          * normally the thread should not return from the call -
           * just in case the thread wasn't destroyed in the fini callback
-          * destroy it here 
+          * destroy it here
           */
          ec_thread_destroy(pid);
 
@@ -367,7 +367,7 @@ int plugin_kill_thread(char *name, char *thread)
       }
    }
    KILL_UNLOCK;
-   
+
    return -E_NOTFOUND;
 }
 
@@ -398,7 +398,7 @@ int plugin_list_walk(int min, int max, void (*func)(char, struct plugin_ops *))
       func(p->activated, p->ops);
       i++;
    }
-   
+
    return (i == min) ? -E_NOTFOUND : (i-1);
 }
 
@@ -415,7 +415,7 @@ int plugin_is_activated(char *name)
          return p->activated;
       }
    }
-   
+
    return 0;
 }
 
@@ -431,7 +431,7 @@ int search_plugin(char *name)
          return E_SUCCESS;
       }
    }
-   
+
    return -E_NOTFOUND;
 }
 
@@ -446,7 +446,7 @@ void plugin_list(void)
 
    /* load all the plugins */
    plugin_load_all();
-      
+
    /* print the list */
    fprintf(stdout, "\nAvailable plugins :\n\n");
    ret = plugin_list_walk(PLP_MIN, PLP_MAX, &plugin_print);
@@ -477,14 +477,14 @@ void free_plugin_list(struct plugin_list_t plugins)
 }
 
 /*
- * callback function for displaying the plugin list 
+ * callback function for displaying the plugin list
  */
 static void plugin_print(char active, struct plugin_ops *ops)
 {
    /* variable not used */
    (void) active;
 
-   fprintf(stdout, " %15s %4s  %s\n", ops->name, ops->version, ops->info);  
+   fprintf(stdout, " %15s %4s  %s\n", ops->name, ops->version, ops->info);
 }
 
 /* EOF */

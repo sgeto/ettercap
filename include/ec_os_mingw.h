@@ -1,11 +1,22 @@
 #ifndef ETTERCAP_OS_MINGW_H
 #define ETTERCAP_OS_MINGW_H
 
-/* This file is *not* MingW specific, but Ettercap requires gcc.
- * So that leaves other Win32 compilers out.
+/* Macros and replacement for the Win32 port of Ettercap.
+ * Tested only with MingW and MSVC v16.
  */
 #include <malloc.h>     /* for alloca() */
 #include <winsock2.h>   /* u_char etc. */
+
+EC_API_EXTERN void ec_win_init (void);
+
+
+#if !defined(HAVE_SLEEP)
+   #define sleep(sec)    Sleep (1000*(sec))
+#endif
+
+#if !defined(HAVE_USLEEP)
+   #define usleep(usec) 'no-not-use-usleep() directly. Use ec_usleep().'
+#endif
 
 #if !defined(HAVE_GETUID)
    #define getuid()      (0)
@@ -17,6 +28,10 @@
 
 #if !defined(HAVE_GETEUID)
    #define geteuid()     (0)
+#endif
+
+#if !defined(HAVE_SETEUID)
+   #define seteuid(x)    (0)
 #endif
 
 #if !defined(HAVE_GETEUID)
@@ -75,7 +90,7 @@
 #endif
 
 #ifndef EISCONN
-#define EISCONN WSAEISCONN
+#define EISCONN      WSAEISCONN
 #endif
 
 /* Only used in socket code */
@@ -87,7 +102,7 @@
 
 #define gettimeofday(tv,tz)    ec_win_gettimeofday (tv, tz)
 #define strsignal(signo)       ec_win_strsignal (signo)
-#define poll(p,n,t)            ec_win_poll (p,n,t)
+#define poll(p,n,t)            ec_win_poll (p, n, t)
 #define dn_expand(m,e,c,ex,l)  ec_win_dn_expand (m, e, c, ex, l)
 #define dn_comp(e,c,l,d,ld)    ec_win_dn_comp(e,c,l,d,ld)
 
@@ -99,6 +114,7 @@ EC_API_EXTERN int         ec_win_dn_comp   (const char *exp_dn, u_char *comp_dn,
 EC_API_EXTERN int         ec_win_gettimeofday (struct timeval *tv, struct timezone *tz);
 EC_API_EXTERN const char *ec_win_strsignal (int signo);
 
+
 /* poll() emulation
  */
 #define POLLIN   0x0001
@@ -108,11 +124,13 @@ EC_API_EXTERN const char *ec_win_strsignal (int signo);
 #define POLLHUP  0x0010   /* not used */
 #define POLLNVAL 0x0020   /* not used */
 
-struct pollfd {
-       int fd;
-       int events;     /* in param: what to poll for */
-       int revents;    /* out param: what events occured */
-     };
+#ifndef HAVE_STRUCT_POLLFD  /* MingW */
+  struct pollfd {
+         int fd;
+         int events;     /* in param: what to poll for */
+         int revents;    /* out param: what events occured */
+      };
+#endif
 
 #undef  HAVE_POLL
 #define HAVE_POLL 1
@@ -134,7 +152,7 @@ EC_API_EXTERN const char *ec_win_get_ec_dir (void);
 #ifndef INSTALL_EXECPREFIX
    #define INSTALL_EXECPREFIX ec_win_get_ec_dir()
 #endif
-   
+
 #ifndef INSTALL_SYSCONFDIR
    #define INSTALL_SYSCONFDIR ec_win_get_ec_dir()
 #endif
@@ -150,12 +168,20 @@ EC_API_EXTERN const char *ec_win_get_ec_dir (void);
 #ifndef INSTALL_DATADIR
    #define INSTALL_DATADIR   "/share"  /* this cannot be a function (sigh) */
 #endif
-   
+
+#ifndef ICON_DIR
+  #define ICON_DIR           "/share"
+#endif
+
+#ifndef MAN_INSTALLDIR
+  #define MAN_INSTALLDIR     "./man"
+#endif
+
 /* dlopen() emulation (not exported)
  */
 #if !defined(HAVE_DLOPEN)
-   #define RTLD_NOW  0         /* No importance */
-   #define RTLD_LOCAL 0        /* No importance */
+   #define RTLD_NOW   0         /* No importance */
+   #define RTLD_LOCAL 0         /* No importance */
    #define RTLD_NOW 0
    #define PLUGIN_EXT           "*.dll"
 
@@ -189,12 +215,12 @@ EC_API_EXTERN const char *ec_win_get_ec_dir (void);
 #if !defined(HAVE_WAIT)
   #define wait(st)  ec_win_wait(st)
   #define WEXITSTATUS(w) 1
-  #define WIFEXITED(w)  1
+  #define WIFEXITED(w)   1
 
   EC_API_EXTERN int ec_win_wait (int *status);
 #endif
-   
-  
+
+
 /* Missing stuff for ec_resolv.h / ec_win_dnexpand()
  */
 #ifndef INT16SZ
@@ -246,8 +272,11 @@ EC_API_EXTERN const char *ec_win_get_ec_dir (void);
 /*
  * Misc. stuff
  */
-#define strerror ec_win_strerror
+#define strerror(err) ec_win_strerror(err)
+#define getenv(env)   ec_getenv_expand (env)
+
 EC_API_EXTERN char *ec_win_strerror(int err);
+EC_API_EXTERN char *ec_getenv_expand (const char *variable);
 EC_API_EXTERN int  ec_win_pcap_stop(const void *pcap_handle);
-  
-#endif /* EC_WIN_MISC_H */
+
+#endif /* ETTERCAP_OS_MINGW_H */

@@ -52,7 +52,7 @@ void __init icmp_redirect_init(void)
    mm.name = "icmp";
    mm.start = &icmp_redirect_start;
    mm.stop = &icmp_redirect_stop;
-   
+
    mitm_add(&mm);
 }
 
@@ -64,18 +64,18 @@ static int icmp_redirect_start(char *args)
 {
    struct ip_list *i;
    char tmp[MAX_ASCII_ADDR_LEN];
-  
+
    DEBUG_MSG("icmp_redirect_start");
 
    /* check the parameter */
    if (!strcmp(args, "")) {
       SEMIFATAL_ERROR("ICMP redirect needs a parameter.\n");
    } else {
-      char temp[strlen(args)+3];
+      char *temp = alloca (strlen(args)+3);
 
       /* add the / to be able to use the target parsing function */
       snprintf(temp, strlen(args)+3, "%s//", args);
-      
+
       if (compile_target(temp, &redirected_gw) != E_SUCCESS)
          SEMIFATAL_ERROR("Wrong target parameter");
    }
@@ -100,9 +100,9 @@ static int icmp_redirect_start(char *args)
  */
 static void icmp_redirect_stop(void)
 {
-   
+
    DEBUG_MSG("icmp_redirect_stop");
-   
+
    USER_MSG("ICMP redirect stopped.\n");
 
    /* delete the hook points */
@@ -125,32 +125,32 @@ static void icmp_redirect(struct packet_object *po)
 
    /* retrieve the gw ip */
    i = LIST_FIRST(&redirected_gw.ips);
-   
+
    /* the packet must be directed to the gateway */
    if (memcmp(po->L2.dst, redirected_gw.mac, MEDIA_ADDR_LEN))
       return;
 
-   /* 
+   /*
     * if the packet endpoint is the gateway, skip it.
-    * we are interested only in packet going THRU the 
+    * we are interested only in packet going THRU the
     * gateway, not TO the gateway
     */
    if (!ip_addr_cmp(&po->L3.dst, &i->ip))
       return;
-  
-   /* redirect only the connection that match the TARGETS */ 
+
+   /* redirect only the connection that match the TARGETS */
    EXECUTE(GBL_SNIFF->interesting, po);
-   
+
    /* the packet is not interesting */
    if ( po->flags & PO_IGNORE )
       return;
-   
+
    USER_MSG("ICMP redirected %s:%d -> ", ip_addr_ntoa(&po->L3.src, tmp), ntohs(po->L4.src));
    USER_MSG("%s:%d\n", ip_addr_ntoa(&po->L3.dst, tmp), ntohs(po->L4.dst));
 
    /* send the ICMP redirect */
    send_icmp_redir(ICMP_REDIRECT_HOST, &i->ip, &GBL_IFACE->ip, po);
-   
+
 }
 
 

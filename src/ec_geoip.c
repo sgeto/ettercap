@@ -175,7 +175,7 @@ const char* geoip_country_by_ip (struct ip_addr *ip)
 
    /* only global IP addresses can have a location */
    if (!ip_addr_is_global(ip)) {
-      return "No unique location";
+      return "Private address";
    }
 
    /* Determine country id by IP address */

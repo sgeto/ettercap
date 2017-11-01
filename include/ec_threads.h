@@ -14,7 +14,40 @@ struct ec_thread {
 /* a value to be used to return errors in fuctcions using pthread_t values */
 pthread_t EC_PTHREAD_NULL;
 #define EC_PTHREAD_SELF EC_PTHREAD_NULL
-#define PTHREAD_ID(id)  (*(unsigned long*)&(id)) 
+
+/*
+ * In pthreads-win32 ver 2.8.1 (and later), 'pthread_t' is a structure:
+ *
+ *  typedef struct {
+ *    void * p;                // Pointer to actual object
+ *    unsigned int x;          // Extra information - reuse count etc
+ *  } ptw32_handle_t;
+ *
+ * typedef ptw32_handle_t pthread_t;
+ *
+ * Hence this doesn't work with MSVC (only gcc):
+ *   pthread_cancel ((pthread_t)id);   // cast of struct to struct is not allowed.
+ *
+ * So for Windows, this PTHREAD_ID() macro will return something unique
+ * since 'id->p' comes from a calloc() call in ptw32_new.c.
+ */
+#if defined(OS_WINDOWS)
+    #define PTHREAD_ID(id)     (*(pthread_t*)&(id))
+
+    #if defined(__MINGW32__)
+      /*
+       * Not all MinGW-built pthreads have the 'pthread_getunique_np()' function.
+       * So just ass-um-e the calloc()'ed address shifted down 4 bits makes a
+       * unique pthread number.
+       */
+      #define PTHREAD_NUM(id)  ((*(unsigned long*)&(id)) >> 4)
+    #else
+      #define PTHREAD_NUM(id)  ((unsigned long) pthread_getunique_np (id))
+    #endif
+#else
+    #define PTHREAD_ID(id)     (*(unsigned long*)&(id))
+    #define PTHREAD_NUM(id)    PTHREAD_ID (id)
+#endif
 
 #define EC_THREAD_FUNC(x) void * x(void *args)
 #define EC_THREAD_PARAM  args

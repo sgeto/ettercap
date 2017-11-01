@@ -328,7 +328,7 @@ static int parse_line (const char *str, int line, int *type_p, char **ip_p, u_in
          struct ip_addr *sender;
          struct ip_addr *target;
          u_int8 *tmac;
-         u_int8 answer[name_len + 10 + 4];
+         u_int8 *answer = alloca (name_len + 10 + 4);
          u_char *p = answer + name_len;
          char tmp[MAX_ASCII_ADDR_LEN];
          
@@ -377,7 +377,7 @@ static int parse_line (const char *str, int line, int *type_p, char **ip_p, u_in
          struct ip_addr *sender;
          struct ip_addr *target;
          u_int8 *tmac;
-         u_int8 answer[name_len + 10 + 16];
+         u_int8 *answer = alloca (name_len + 10 + 16);
          u_char *p = answer + name_len;
          char tmp[MAX_ASCII_ADDR_LEN];
          
@@ -426,7 +426,7 @@ static int parse_line (const char *str, int line, int *type_p, char **ip_p, u_in
          struct ip_addr *sender;
          struct ip_addr *target;
          u_int8 *tmac;
-         u_int8 answer[name_len + 256];
+         u_int8 *answer = alloca (name_len + 256);
          char *a, *p = (char*)answer + name_len;
          int rlen;
          
@@ -469,7 +469,7 @@ static int parse_line (const char *str, int line, int *type_p, char **ip_p, u_in
          struct ip_addr *sender;
          struct ip_addr *target;
          u_int8 *tmac;
-         u_int8 answer[name_len + 22 + 12 + 16];
+         u_int8 *answer = alloca (name_len + 22 + 12 + 16);
          char *p = (char *)answer + name_len;
          char tmp[MAX_ASCII_ADDR_LEN];
          char srvoffset[2];

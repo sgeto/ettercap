@@ -41,13 +41,50 @@ EC_API_EXTERN int ui_msg_flush(int max);
 EC_API_EXTERN int ui_msg_purge_all(void);
 EC_API_EXTERN void ui_register(struct ui_ops *ops);
 
-#define USER_MSG(x, ...) ui_msg(x, ## __VA_ARGS__ )
+#if defined(DETAILED_DEBUG)
+  EC_API_EXTERN const char *ui_msg_fname;
+  EC_API_EXTERN unsigned    ui_msg_line;
 
-#define INSTANT_USER_MSG(x, ...) do { ui_msg(x, ## __VA_ARGS__ ); ui_msg_flush(MSG_ALL); } while(0)
+  #define UI_STORE_DETAILS() (ui_msg_fname = __FILE__, \
+                              ui_msg_line  = __LINE__)
+#else
+  #define UI_STORE_DETAILS()
+#endif
 
-#define FATAL_MSG(x, ...) do { ui_error(x, ## __VA_ARGS__ ); return (-E_FATAL); } while(0)
+#if defined(DETAILED_DEBUG)
+  #define USER_MSG(x, ...)          do {                                            \
+                                      ui_msg ("%s(%u): "x,                          \
+                                              __FILE__, __LINE__, ## __VA_ARGS__);  \
+                                    } while(0)
 
-/* 
+  #define INSTANT_USER_MSG(x, ...)  do {                                            \
+                                      ui_msg ("%s(%u): "x,                          \
+                                              __FILE__, __LINE__, ## __VA_ARGS__);  \
+                                      ui_msg_flush(MSG_ALL);                        \
+                                    } while(0)
+
+  #define FATAL_MSG(x, ...)        do {                                             \
+                                     ui_error ("%s(%u): "x,                         \
+                                               __FILE__, __LINE__, ## __VA_ARGS__); \
+                                     return (-E_FATAL);                             \
+                                   } while(0)
+#else
+  #define USER_MSG(x, ...)         do {                         \
+                                     ui_msg(x, ## __VA_ARGS__); \
+                                   } while(0)
+
+  #define INSTANT_USER_MSG(x, ...) do {                          \
+                                     ui_msg(x, ## __VA_ARGS__);  \
+                                     ui_msg_flush(MSG_ALL);      \
+                                   } while(0)
+
+  #define FATAL_MSG(x, ...)        do { \
+                                     ui_error(x, ## __VA_ARGS__); \
+                                     return (-E_FATAL);           \
+                                   } while(0)
+#endif
+
+/*
  * if we are using the text interface, exit with a fatal error,
  * else display a message and continue with the current GUI (curses or gtk)
  */

@@ -57,7 +57,7 @@ int wep_decrypt(u_char *buf, size_t len, u_char *wkey, size_t wlen)
    u_char seed[32]; /* 256 bit for the wep key */
    struct wep_header *wep;
    u_char *encbuf;
-   u_char decbuf[len];
+   u_char *decbuf = alloca (len);
 
    /* the key was not set, don't try to decript it */
    if (wlen == 0)
@@ -177,7 +177,7 @@ int set_wep_key(char *string)
    int bit = 0;
    char *p, type;
    char *tok;
-   char s[strlen(string) + 1];
+   char *s = alloca (strlen(string) + 1);
    u_char tmp_wkey[512];
    size_t tmp_wkey_len;
    char tmp[128];

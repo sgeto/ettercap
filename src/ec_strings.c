@@ -326,10 +326,42 @@ char * ec_strtok(char *s, const char *delim, char **ptrptr)
 #ifdef HAVE_STRTOK_R 
    return strtok_r(s, delim, ptrptr);
 #else
-   #warning unsafe strtok
-   /* to avoid the warning on this function (the wrapper macro) */
-   #undef strtok
-   return strtok(s, delim);
+  /*
+   * A strtok_r() function taken from libcurl:
+   *
+   * Copyright (C) 1998 - 2007, Daniel Stenberg, <daniel@haxx.se>, et al.
+   */
+  if (!s)
+    /* we got NULL input so then we get our last position instead */
+    s = *ptrptr;
+
+  /* pass all letters that are including in the separator string */
+  while (*s && strchr(delim, *s))
+    ++s;
+
+  if (*s) {
+    /* so this is where the next piece of string starts */
+    char *start = s;
+
+    /* set the end pointer to the first byte after the start */
+    *ptrptr = start + 1;
+
+    /* scan through the string to find where it ends, it ends on a
+       null byte or a character that exists in the separator string */
+    while (**ptrptr && !strchr(delim, **ptrptr))
+      ++*ptrptr;
+
+    if (**ptrptr) {
+      /* the end is not a null byte */
+      **ptrptr = '\0';  /* zero terminate it! */
+      ++*ptrptr;        /* advance the last pointer to beyond the null byte */
+    }
+
+    return start; /* return the position where the string starts */
+  }
+
+  /* we ended up on a null byte, there are no more strings to find! */
+  return NULL;
 #endif
 }
 
@@ -401,6 +433,7 @@ int str_hex_to_bytes(char *string, u_char *bytes)
 
 
 /* print a binary string in hex format */
+#if 0
 char * str_tohex(u_char *bin, size_t len, char *dst, size_t dst_len)
 {
    size_t i;
@@ -412,6 +445,24 @@ char * str_tohex(u_char *bin, size_t len, char *dst, size_t dst_len)
 
    return dst;
 }
+
+#else
+
+static char itoa16[16] =  "0123456789ABCDEF";
+
+char *str_tohex(u_char *bin, size_t len, char *dst, size_t dst_len)
+{
+   size_t i, j;
+
+   memset(dst, 0, dst_len);
+
+   for (i = j = 0; i < len && j < dst_len; j += 2, i++) {
+      dst[j]   = itoa16 [bin[i] >> 4];
+      dst[j+1] = itoa16 [bin[i] & 0xF];
+   }
+   return (dst);
+}
+#endif
 
 /* EOF */
 

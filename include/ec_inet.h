@@ -79,6 +79,19 @@ struct net_list {
    LIST_ENTRY(net_list) next;
 };
 
+/* Some plugins needs these with the proper '__dllimport__.
+ */
+#if defined(OS_WINDOWS)
+  #if !defined(HAVE_INET_PTON)
+    EC_API_EXTERN int inet_pton (int af, const char *src, void *dst);
+  #endif
+
+  #if !defined(HAVE_INET_NTOP)
+    EC_API_EXTERN const char *inet_ntop (int af, const void *src, char *buf, int size);
+  #endif
+#endif
+
+
 EC_API_EXTERN int ip_addr_init(struct ip_addr *sa, u_int16 type, u_char *addr);
 EC_API_EXTERN int ip_addr_cpy(u_char *addr, struct ip_addr *sa);
 EC_API_EXTERN int ip_addr_cmp(struct ip_addr *sa, struct ip_addr *sb);

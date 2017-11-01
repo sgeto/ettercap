@@ -31,6 +31,9 @@
 #ifndef HAVE_STRCASESTR 
    #include <missing/strcasestr.h>
 #endif
+#ifndef HAVE_STRNDUP
+   #include <missing/strndup.h>
+#endif
 #ifndef HAVE_MEMMEM
    #include <missing/memmem.h>
 #endif

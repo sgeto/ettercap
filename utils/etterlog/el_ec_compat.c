@@ -28,29 +28,31 @@
 FILE *debug_file = (void *)1;  /* not NULL to avoid FATAL_ERROR */
 
 /************************************************/
- 
-/* the void implementation */
 
-void debug_msg(const char *message, ...) 
+/* the void implementations */
+
+void debug_msg(const char *message, ...)
 {
    (void) message;
 }
 
+#if !defined(DETAILED_DEBUG) || !defined(OS_WINDOWS)
 /* fake the UI implementation */
-void ui_msg(const char *fmt, ...) 
-{ 
+void ui_msg(const char *fmt, ...)
+{
    va_list ap;
-   /* print the message */ 
+   /* print the message */
    va_start(ap, fmt);
    vfprintf (stderr, fmt, ap);
    va_end(ap);
    fprintf(stderr, "\n");
 }
+#endif
 
-void ui_error(const char *fmt, ...) 
-{ 
+void ui_error(const char *fmt, ...)
+{
    va_list ap;
-   /* print the message */ 
+   /* print the message */
    va_start(ap, fmt);
    vfprintf (stderr, fmt, ap);
    va_end(ap);

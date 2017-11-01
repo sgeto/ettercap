@@ -55,6 +55,7 @@
 #include <ec.h>
 #include <ec_file.h>
 #include <ec_hash.h>
+#include <ec_manuf.h>
 
 
 #define TABBIT    10 /* 2^10 bit tab entries: 1024 SLISTS */
@@ -80,8 +81,6 @@ struct entry {
 /* protos */
 
 static void discard_macdb(void);
-int manuf_init(void);
-char * manuf_search(const char *m);
 
 /*****************************************/
 
@@ -102,7 +101,7 @@ static void discard_macdb(void)
    }
 
    DEBUG_MSG("ATEXIT: discard_macdb");
-   
+
    return;
 }
 
@@ -136,7 +135,7 @@ int manuf_init(void)
       mac.b[1] = (char) (m2);
       mac.b[2] = (char) (m3);
       mac.b[3] = 0;
-      
+
       LOAD_ENTRY(p, mac.i, name);
 
       SLIST_INSERT_HEAD(&(manuf_head[fnv_32(mac.b, 4) & TABMASK]), p, entries);
@@ -147,7 +146,7 @@ int manuf_init(void)
 
    DEBUG_MSG("manuf_init -- %d fingers loaded", i);
    USER_MSG("%4d mac vendor fingerprint\n", i);
-   
+
    fclose(f);
 
    atexit(discard_macdb);
@@ -173,7 +172,7 @@ char * manuf_search(const char *m)
    mac.b[3] = 0;
 
    h = fnv_32(mac.b, 4) & TABMASK;
-   
+
    SLIST_FOREACH(l, &manuf_head[h], entries) {
       if (l->mac == mac.i)
          return (l->vendor);

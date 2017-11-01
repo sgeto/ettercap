@@ -38,14 +38,15 @@
 #include <time.h>
 
 /*
- * On Windows (MinGw) we must export all ettercap.exe variables/function
+ * On Windows we must export all ettercap.exe variables/function
  * used in plugins and functions in plugins must be declared as 'importable'
  */
 #if defined(OS_WINDOWS)
+   #undef EC_API_EXTERN
    #if defined(BUILDING_PLUGIN)
-      #define EC_API_EXTERN __declspec(dllimport)
+      #define EC_API_EXTERN extern __declspec(dllimport)
    #else
-      #define EC_API_EXTERN __declspec(dllexport)
+      #define EC_API_EXTERN extern __declspec(dllexport)
    #endif
 #else
    #define EC_API_EXTERN extern
@@ -59,10 +60,17 @@
 #include <ec_globals.h>
 #include <ec_strings.h>
 
-#ifdef OS_MINGW
-   #include <ec_os_mingw.h>
+#ifdef OS_WINDOWS
+   #include <ec_os_mingw.h>  /* For MSVC too */
 #endif
 
+#if defined(_MSC_VER) && defined(_DEBUG)  /* use CrtDebug in MSVC debug-mode */
+  #define _CRTDBG_MAP_ALLOC
+  #undef _malloca                         /* Avoid MSVC-9 <malloc.h>/<crtdbg.h> name-clash */
+  #undef strdup
+  #undef getcwd
+  #include <crtdbg.h>
+#endif
 
 /* wrappers for safe memory allocation */
 
@@ -88,6 +96,12 @@
 
 #define SAFE_FREE(x) do{ if(x) { free(x); x = NULL; } }while(0)
 
+/* wrapper for alloca() with memset() */
+
+#define CALLOCA(_p, _size) do {                  \
+                             _p = alloca(_size); \
+                             memset(_p,0,_size); \
+                           } while(0)
 
 /* convert to string */
 #define EC_STRINGIFY(in) #in
@@ -137,7 +151,7 @@
 #define MICRO2SEC(x)    x /    1000000
 #define NANO2SEC(x)     x / 1000000000
 
-/* file operations */ 
+/* file operations */
 #ifndef OS_WINDOWS
    #define O_BINARY  0
 #endif
@@ -151,7 +165,7 @@
 
 /* Save and restore relative offsets for pointers into a buffer */
 #define SAVE_OFFSET(o,b)     o=(u_int8 *)((int)o-(int)b)
-#define RESTORE_OFFSET(o,b)  o=(u_int8 *)((int)o+(int)b)   
+#define RESTORE_OFFSET(o,b)  o=(u_int8 *)((int)o+(int)b)
 
 /* ANSI colors */
 #ifndef OS_WINDOWS
@@ -165,14 +179,14 @@
    #define EC_COLOR_CYAN   "\033[36m"EC_COLOR_BOLD
 #else
    /* Windows console doesn't grok ANSI */
-   #define EC_COLOR_END    
-   #define EC_COLOR_BOLD   
+   #define EC_COLOR_END
+   #define EC_COLOR_BOLD
 
-   #define EC_COLOR_RED    
-   #define EC_COLOR_YELLOW 
-   #define EC_COLOR_GREEN  
-   #define EC_COLOR_BLUE   
-   #define EC_COLOR_CYAN  
+   #define EC_COLOR_RED
+   #define EC_COLOR_YELLOW
+   #define EC_COLOR_GREEN
+   #define EC_COLOR_BLUE
+   #define EC_COLOR_CYAN
 #endif
 
 /* magic numbers */
