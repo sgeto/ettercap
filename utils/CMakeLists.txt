@@ -43,6 +43,10 @@ set(EL_SRC
             etterlog/el_target.c
 )
 
+if(NOT HAVE_STRLCAT AND NOT HAVE_STRLCAT_FUNCTION)
+    set(EL_SRC ${EL_SRC} ../src/missing/strlcat.c)
+endif(NOT HAVE_STRLCAT AND NOT HAVE_STRLCAT_FUNCTION)
+
 add_executable(etterlog ${EL_SRC})
 target_link_libraries(etterlog lib_ettercap)
 if(NOT DISABLE_RPATH)
