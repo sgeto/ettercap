@@ -55,7 +55,7 @@ addons:
 
 env:
   # Default build. Release.
-  - BUILD_ARGS=""
+  - BUILD_ARGS="" CMAKE_LINT=1
   # Debug build
   - BUILD_ARGS="-DCMAKE_BUILD_TYPE=Debug"
   # Everything that's optional
@@ -99,7 +99,7 @@ matrix:
       env: BUILD_ARGS="-DBUNDLED_CURL=Off"
   exclude:
     - os: osx
-      env: BUILD_ARGS=""
+      env: BUILD_ARGS="" CMAKE_LINT=1
     - os: osx
       env: BUILD_ARGS="-DCMAKE_BUILD_TYPE=Debug"
     - os: osx
@@ -143,7 +143,7 @@ before_script:
     - if [ ${TRAVIS_OS_NAME} = "osx" ]; then export BUILD_ARGS="$BUILD_ARGS -DOPENSSL_ROOT_DIR=`brew --prefix openssl`";fi
 
 script:
-  - if [[ "$CC" == "gcc" && "${BUILD_ARGS}" = "" ]]; then git clone https://github.com/richq/cmake-lint.git; cd cmake-lint; python setup.py install --user; cd -; ./misc/cmakelint.sh; fi
+  - if [[ "$CC" == "gcc" && "$CMAKE_LINT" == "1" ]]; then git clone https://github.com/richq/cmake-lint.git; cd cmake-lint; python setup.py install --user; cd -; ./misc/cmakelint.sh; fi
   - mkdir build
   - cd build
   - cmake -DENABLE_TESTS=On $BUILD_ARGS ..

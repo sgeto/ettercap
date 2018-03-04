@@ -1,0 +1,105 @@
+version: -0.8.3-{build}
+
+# Do not increment build number after pull requests.
+pull_requests:
+  do_not_increment_build_number: true
+
+# Only build the 'master' branch.
+branches:
+  only:
+    - master
+    - appveyor
+
+# Skipping commits affecting these files.
+skip_commits:
+   files:
+    - '**/*.README.*'
+    - '**/*.md'
+    - '**/*.png'
+    - '**/*.ico'
+
+init:
+# Carriage returns can be bad
+  - git config --global core.autocrlf input
+
+# set clone depth
+clone_depth: 5
+
+environment:
+  global:
+    # Enable test output on failure.
+    CTEST_OUTPUT_ON_FAILURE: 1
+    CL: -nologo
+    LINK: -nologo
+    BUILD_ARGS: "-Werror=dev -Werror=deprecated -DCMAKE_VERBOSE_MAKEFILE=1"
+
+  matrix:
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+    GENERATOR: "Visual Studio 14 2015"
+    ARCH: 32
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+    GENERATOR: "Visual Studio 14 2015 Win64"
+    ARCH: 64
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    GENERATOR: "Visual Studio 14 2017"
+    ARCH: 32
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    GENERATOR: "Visual Studio 14 2017 Win64"
+    ARCH: 64
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    GENERATOR: "MSYS Makefiles"
+    ARCH: 32
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    GENERATOR: "MSYS Makefiles"
+    ARCH: 64
+
+matrix:
+  # Immediately finish build if one of the above jobs fails.
+  # fast_finish: true
+  # XXX - remove me!
+  allow_failures:
+    - ARCH: 32
+    - ARCH: 64
+
+# cache:
+# - etterdeps.7z
+
+install:
+  # Clone the submodules.
+  - git submodule update --init --recursive
+
+before_build:
+  - set PATH=c:\msys64\mingw%ARCH%\bin;c:\msys64\usr\bin;%PATH%
+  - mkdir build
+  - cd build
+  - ps: |
+      if ($env:APPVEYOR_REPO_TAG -eq "true") {
+        $env:BUILD_TYPE = "RelWithDebInfo"
+      }
+      else {
+        $env:BUILD_TYPE = "Debug"
+      }
+  - ps: |
+      if ($env:GENERATOR -ne "MSYS Makefiles") {
+        cmake -G"$env:GENERATOR" $env:BUILD_ARGS -DLIBRARY_BUILD=ON ..
+      }
+      else {
+        cmake -G"$env:GENERATOR" $env:BUILD_ARGS -DCMAKE_BUILD_TYPE=$env:BUILD_TYPE ..
+      }
+
+build_script:
+  - ps: |
+      cmake --build . --config $env:BUILD_TYPE --target install
+
+test_script:
+  - ps: |
+      ctest --output-on-failure --interactive-debug-mode 0 -C Debug -V
+
+# XXX - add IRC
+notifications:
+- provider: Email
+  to:
+  - '{{commitAuthorEmail}}'
+  on_build_success: false
+  on_build_failure: true
+  on_build_status_changed: true
