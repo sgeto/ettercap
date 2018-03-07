@@ -1,3 +1,53 @@
+# This file is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+# AppVeyor Build Configuration Basics
+# ===================================
+#
+# General build flow:
+# -------------------
+#
+# - init scripts
+# - Update /etc/hosts file
+# - Clone repository
+# - Restore build cache
+# - Configure stack
+# - install scripts
+# - Start services
+# - Patch version in .csproj and AssemblyInfo.cs files
+# - “build” phase
+# - “test” phase
+# - “package” phase
+# - “deploy” phase
+# - on_success scripts
+# - on_failure scripts (if the build has failed)
+# - on_finish scripts
+#
+# Notes:
+# ------
+# 1. AppVeyor's Ubuntu reference is found here:
+#    https://www.appveyor.com/docs/getting-started-with-appveyor-for-linux/
+# 2. Append "sudo" to commands that require root (duh)
+# 3. If a command has long options, please use them.
+# 4. YALM hates you too. It told me that you rather guess around, instead of
+#    reading its documentation.
+# 5. Speaking of YALM: - If a value starts with *, surround it with single
+#                        quotes. See "skip_commits" and "artifacts" below.
+# 6. Keep powershell commands simple, or add comments where appropriate.
+# 7. Keep lines below 80 characters.
+#    Escape newline character with '`' (powershell).
+
 version: -0.8.3-{build}
 
 # Do not increment build number after pull requests.
@@ -6,9 +56,8 @@ pull_requests:
 
 # Only build the 'master' branch.
 branches:
-  only:
-    - master
-    - appveyor
+  except:
+    - gh-pages
 
 # Skipping commits affecting these files.
 skip_commits:
@@ -19,32 +68,52 @@ skip_commits:
     - '**/*.ico'
 
 init:
+  - ps: |
+      Write-Host -ForegroundColor White -BackgroundColor Blue ("Hello " + $env:APPVEYOR_ACCOUNT_NAME)
+      Write-Host -ForegroundColor White -BackgroundColor Blue "Hope you're having great day."
+      Write-Host -ForegroundColor White -BackgroundColor Blue "You're viewing project $env:APPVEYOR_PROJECT_NAME by $env:APPVEYOR_REPO_COMMIT_AUTHOR ($env:APPVEYOR_REPO_NAME) at "$env:APPVEYOR_REPO_COMMIT" ("$env:APPVEYOR_REPO_COMMIT_MESSAGE")."
 # Carriage returns can be bad
+# XXX - remove?
   - git config --global core.autocrlf input
 
 # set clone depth
+# XXX - this may back-fire...
 clone_depth: 5
 
 environment:
   global:
-    # Enable test output on failure.
+    # Uncomment to disables execution of PowerShell commands on Linux-based
+    # images. I wouldn't blame you if you did.
+    # APPVEYOR_YML_DISABLE_PS_LINUX: true
+    # XXX - set cache dirssss
+    # Update the (vcpkg) cache even if build fails
+    APPVEYOR_SAVE_CACHE_ON_ERROR: true
+    # Enable test output on failure
     CTEST_OUTPUT_ON_FAILURE: 1
+    # XXX - set %VCPKG_DEFAULT_TRIPLET% (see 'vcpkg help triplet')
+    # VCPKG_DEFAULT_TRIPLET: x64-windows-static
     CL: -nologo
     LINK: -nologo
-    BUILD_ARGS: "-Werror=dev -Werror=deprecated -DCMAKE_VERBOSE_MAKEFILE=1"
+    DEV_ARGS: "-Werror=dev -Werror=deprecated -DCMAKE_VERBOSE_MAKEFILE=1"
 
   matrix:
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-    GENERATOR: "Visual Studio 14 2015"
-    ARCH: 32
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-    GENERATOR: "Visual Studio 14 2015 Win64"
-    ARCH: 64
+  - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+    CMAKE_LINT: True
+  - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+    GENERATOR: "Unix Makefiles"
+    GTK: GTK3
+    GTKPKG: libgtk-3-dev
+    IPV6: ON
+  - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+    GENERATOR: "Unix Makefiles"
+    GTK: GTK2
+    GTKPKG: libgtk2.0-dev
+    IPV6: OFF
   - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-    GENERATOR: "Visual Studio 14 2017"
+    GENERATOR: "Visual Studio 15 2017"
     ARCH: 32
   - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-    GENERATOR: "Visual Studio 14 2017 Win64"
+    GENERATOR: "Visual Studio 15 2017 Win64"
     ARCH: 64
   - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
     GENERATOR: "MSYS Makefiles"
@@ -54,7 +123,7 @@ environment:
     ARCH: 64
 
 matrix:
-  # Immediately finish build if one of the above jobs fails.
+  # Immediately finish build if any job fails.
   # fast_finish: true
   # XXX - remove me!
   allow_failures:
@@ -63,15 +132,55 @@ matrix:
 
 # cache:
 # - etterdeps.7z
+# - C:\Tools\vcpkg\installed
 
+# XXX - is sending output to null a good idea in "install"?
+#       The build won't be considered failed if anything fails here.
+# XXX - use apt long commands
 install:
+  - cmd: echo Hey, I'm Windows!
+  - sh: printf "Linux FTW!\n"
+  - ps: |
+      if ($isLinux) {
+        if ($env:CMAKE_LINT) {
+          Write-Host -ForegroundColor White -BackgroundColor Green "This is cmake-lint!"
+          git clone https://github.com/richq/cmake-lint.git
+            if (test-path cmake-lint) {
+              cd cmake-lint
+            } else {
+            throw "Error while cloning or (changing directory to) 'cmake-lint'. Running 'on_failure' and/or 'on_finish' commands instead."
+            }
+          sudo python setup.py install
+          cd ..
+        } else {
+        Write-Host -ForegroundColor White -BackgroundColor Green "This is Linux!"
+        sudo apt update
+        sudo apt upgrade --assume-yes
+        sudo apt install -y bison check cmake flex groff libbsd-dev libcurl4-openssl-dev libltdl-dev libluajit-5.1-dev libncurses5-dev libnet1-dev libpcap-dev libpcre3-dev libssl-dev libgeoip-dev $env:GTKPKG
+        }
+      } else {
+        Write-Host -ForegroundColor White -BackgroundColor Green "This is NOT Linux!"
+      }
   # Clone the submodules.
   - git submodule update --init --recursive
+# XXX - Please ensure you're using the latest portfiles with `.\vcpkg update`
+  # - .\vcpkg update
 
 before_build:
-  - set PATH=c:\msys64\mingw%ARCH%\bin;c:\msys64\usr\bin;%PATH%
-  - mkdir build
-  - cd build
+  - ps: |
+      if ($isLinux) {
+        if ($env:CMAKE_LINT) {
+          Write-Host -ForegroundColor White -BackgroundColor Green "This is cmake-lint!"
+        } else {
+        Write-Host -ForegroundColor White -BackgroundColor Green "This is Linux!"
+        Start-Process -FilePath "uname" -ArgumentList "-a" -NoNewWindow -Wait
+        Write-Host -ForegroundColor White -BackgroundColor Green "No PATH stuff yet..."
+        }
+      } else {
+        Write-Host -ForegroundColor White -BackgroundColor Green "This is NOT Linux!"
+        set PATH=c:\msys64\mingw%ARCH%\bin;c:\msys64\usr\bin;%PATH%
+      }
+
   - ps: |
       if ($env:APPVEYOR_REPO_TAG -eq "true") {
         $env:BUILD_TYPE = "RelWithDebInfo"
@@ -79,27 +188,57 @@ before_build:
       else {
         $env:BUILD_TYPE = "Debug"
       }
+
   - ps: |
-      if ($env:GENERATOR -ne "MSYS Makefiles") {
-        cmake -G"$env:GENERATOR" $env:BUILD_ARGS -DLIBRARY_BUILD=ON ..
-      }
-      else {
-        cmake -G"$env:GENERATOR" $env:BUILD_ARGS -DCMAKE_BUILD_TYPE=$env:BUILD_TYPE ..
+      if (!$env:CMAKE_LINT) {
+        mkdir build
+        cd build
+        if (($isWindows) -and ($env:GENERATOR -eq "Visual Studio 15 2017")) {
+          cmake -G"$env:GENERATOR" "$env:BUILD_ARGS" -DLIBRARY_BUILD=ON ..
+        } else {
+          Write-Host -ForegroundColor White -BackgroundColor Green "This is not Visual Studio!"
+          Write-Host -ForegroundColor White -BackgroundColor Green "CMAKE_BUILD_TYPE = $env:BUILD_TYPE"
+          cmake -G"$env:GENERATOR" "$env:DEV_ARGS" -DGTK_BUILD_TYPE=$env:GTK -DENABLE_IPV6=$env:IPV6 -DENABLE_LUA=on -DENABLE_PDF_DOCS=on -DENABLE_TESTS=On -DCMAKE_BUILD_TYPE=$env:BUILD_TYPE ..
+        }
       }
 
 build_script:
+  # - ps: |
+      # sudo cmake --build . --config $env:BUILD_TYPE --target install
   - ps: |
-      cmake --build . --config $env:BUILD_TYPE --target install
+      if ($env:CMAKE_LINT) {
+        Write-Host -ForegroundColor White -BackgroundColor Green "This is cmake-lint!"
+        ./misc/cmakelint.sh
+          if ($?) {
+            Write-Host -ForegroundColor White -BackgroundColor Green "cmake-lint passed."
+            Exit-AppveyorBuild
+          } else {
+          throw "cmake-lint error. Please check the above error messages."
+          }
+      } elseif ($env:GENERATOR -eq "Visual Studio 15 2017") {
+          cmake -G"$env:GENERATOR" "$env:BUILD_ARGS" -DLIBRARY_BUILD=ON -DCMAKE_BUILD_TYPE=$env:BUILD_TYPE ..
+      } else {
+          Write-Host -ForegroundColor White -BackgroundColor Green "This is Linux!"
+          Write-Host -ForegroundColor White -BackgroundColor Green "GTK_BUILD_TYPE = $env:GTK"
+          Write-Host -ForegroundColor White -BackgroundColor Green "ENABLE_IPV6= $env:IPV6"
+          
+          make
+      }
 
 test_script:
   - ps: |
       ctest --output-on-failure --interactive-debug-mode 0 -C Debug -V
 
+# XXX - add AppVeyor bot
 # XXX - add IRC
 notifications:
-- provider: Email
-  to:
-  - '{{commitAuthorEmail}}'
-  on_build_success: false
-  on_build_failure: true
-  on_build_status_changed: true
+  - provider: Email
+    to:
+    - '{{commitAuthorEmail}}'
+    on_build_success: false
+    on_build_failure: false
+    on_build_status_changed: true
+  # - provider: GitHubPullRequest
+    # auth_token:
+      # secure: VwyaJwle6Sl0AuOebFpGCIXiPyC2aOZjH0MZe+i8YlFib7AcqvDkbZQUqKbVuHK5
+    # template: "{{#passed}}:white_check_mark:{{/passed}}{{#failed}}:x:{{/failed}} [Build {{&projectName}} {{buildVersion}} {{status}}]({{buildUrl}}) (commit {{commitUrl}} by @{{&commitAuthorUsername}})"
