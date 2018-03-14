@@ -1,3 +1,6 @@
+#
+# (C) 2018 Ettercap Development Team.
+#
 # This file is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
@@ -12,41 +15,114 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-# AppVeyor Build Configuration Basics
-# ===================================
+# AppVeyor Build Configuration 101
+# ================================
 #
-# General build flow:
+# General Build Flow:
 # -------------------
 #
-# - init scripts
-# - Update /etc/hosts file
-# - Clone repository
-# - Restore build cache
-# - Configure stack
-# - install scripts
-# - Start services
-# - Patch version in .csproj and AssemblyInfo.cs files
-# - “build” phase
-# - “test” phase
-# - “package” phase
-# - “deploy” phase
-# - on_success scripts
-# - on_failure scripts (if the build has failed)
-# - on_finish scripts
+# 1. init scripts
+# 2. Update /etc/hosts file
+# 3. Clone repository
+# 4. Restore build cache
+# 5. Configure stack
+# 6. install scripts
+# 7. Start services
+# 8. Patch version in .csproj and AssemblyInfo.cs files
+# 9. “build” phase
+# 10. “test” phase
+# 11. “package” phase
+# 12. “deploy” phase
+# 13. on_success scripts
+# 14. on_failure scripts (if the build has failed)
+# 15. on_finish scripts
 #
-# Notes:
-# ------
+# "Tweakable" Environment Variables
+# ---------------------------------
+#
+# NOTE: 
+# - DON'T ADD/CHANGE THESE VARIABLES UNLESS YOU KNOW WHAT YOU'RE DOING.
+# - Our build cache is fairly huge and takes more than an hour to be rebuild.
+#   AN HOUR is exactly as long as you have before your commit is mark as failed.
+#   Be nice to our build cache.
+#
+# Variables set by AppVeyor:
+# ++++++++++++++++++++++++++
+#
+# This list is incomplete. See
+# https://www.appveyor.com/docs/environment-variables/ for the full list.
+#
+# APPVEYOR_FILE_DOWNLOAD_TIMEOUT - timeout in seconds to download arbitrary
+#                                  files using appveyor DownloadFile command.
+#                                  Default is 300 (5 minutes)
+# APPVEYOR_REPOSITORY_SHALLOW_CLONE_TIMEOUT - timeout in seconds to download
+#                                             repository (GitHub, Bitbucket or
+#                                             VSTS) as zip file (shallow clone).
+#                                             Default is 1800 (30 minutes)
+# APPVEYOR_CACHE_ENTRY_UPLOAD_DOWNLOAD_TIMEOUT - timeout in seconds to download
+#                                                or upload each cache entry.
+#                                                Default is 300 (5 minutes)
+# APPVEYOR_CACHE_SKIP_RESTORE    - set to true to disable cache restore
+# APPVEYOR_CACHE_SKIP_SAVE       - set to true to disable cache update
+# APPVEYOR_BUILD_WORKER_IMAGE    - set build worker image for build to run on.
+#                                  Can be done only at build configuration
+#                                  level, not at build time.
+# APPVEYOR_SKIP_FINALIZE_ON_EXIT - if appveyor exit or Exit-AppVeyor build was
+#                                  called, exit build even without Finalize
+#                                  steps (on_success, on_finish scripts and
+#                                  build cache save)
+# APPVEYOR_SAVE_CACHE_ON_ERROR   - save build cache on build failure. By default
+#                                  build cache is being saved only during
+#                                  successful build Finalize steps
+#
+# Variables set by the Ettercap Development Team:
+# +++++++++++++++++++++++++++++++++++++++++++++++
+# XXX - Keep this list up-to-date
+#
+# CMAKE_LINT   - 
+#
+# enable_debug - (lowercase) most of our scripts output detailed messages when
+#                this variable is set.
+#
+# Notes/TODOs/Thoughts:
+# ---------------------------
+#
 # 1. AppVeyor's Ubuntu reference is found here:
 #    https://www.appveyor.com/docs/getting-started-with-appveyor-for-linux/
-# 2. Append "sudo" to commands that require root (duh)
+# 2. Append "sudo" to commands that require root (duh!).
 # 3. If a command has long options, please use them.
-# 4. YALM hates you too. It told me that you rather guess around, instead of
-#    reading its documentation.
+# 4. YALM hates you too. Read its documentation.
 # 5. Speaking of YALM: - If a value starts with *, surround it with single
 #                        quotes. See "skip_commits" and "artifacts" below.
-# 6. Keep powershell commands simple, or add comments where appropriate.
+#                      - If the first character of a command is a double quotes.
+#                        escape it.
+# 6. Keep Powershell commands simple, or add comments where appropriate.
+# 5. Speaking of posh: - If your editor supports syntax highlighting for
+#                        Powershell, use it. You're welcome.
+#                      - Escape (newline) character with '`'
 # 7. Keep lines below 80 characters.
-#    Escape newline character with '`' (powershell).
+# 8. AppVeyor's Build Worker API documentation:
+#    https://www.appveyor.com/docs/build-worker-api/
+# 9. Speaking of AppVeyor's Build Worker API:
+#                      - Use it.
+#                      - MSBuild's binary log.
+#
+--------------------------------delete me---------------------------------------
+Add-AppveyorMessage -Message <string>
+       [-Category <category> {Information | Warning | Error}]
+       [-Details <string>]
+--------------------------------delete me---------------------------------------
+
+
+
+
+# Credits:
+# -------
+#
+# Most of this is by me, @sgeto. But it wouldn't bad been not possible
+# without the help/inspiration of the following people/projects:
+#
+# - The Ettercap Development Team <http://www.ettercap-project.org/>
 
 version: -0.8.3-{build}
 
@@ -66,6 +142,7 @@ skip_commits:
     - '**/*.md'
     - '**/*.png'
     - '**/*.ico'
+    - '**/*.svg'
 
 init:
   - ps: |
@@ -92,6 +169,7 @@ environment:
     CTEST_OUTPUT_ON_FAILURE: 1
     # XXX - set %VCPKG_DEFAULT_TRIPLET% (see 'vcpkg help triplet')
     # VCPKG_DEFAULT_TRIPLET: x64-windows-static
+    enable_debug: true
     CL: -nologo
     LINK: -nologo
     DEV_ARGS: "-Werror=dev -Werror=deprecated -DCMAKE_VERBOSE_MAKEFILE=1"
@@ -99,6 +177,7 @@ environment:
   matrix:
   - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
     CMAKE_LINT: True
+    APPVEYOR_SKIP_FINALIZE_ON_EXIT: true
   - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
     GENERATOR: "Unix Makefiles"
     GTK: GTK3
@@ -231,6 +310,7 @@ test_script:
 
 # XXX - add AppVeyor bot
 # XXX - add IRC
+# XXX - can I post on twitter/mailing list if build succeed?
 notifications:
   - provider: Email
     to:

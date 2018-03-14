@@ -1,6 +1,5 @@
 #
-# Copyright (C) 2018 Ali Abdulkadir <autostart.ini@gmail.com>
-#                                   <sgeto@ettercap-project.org>
+# Copyright (C) 2018 Ali Abdulkadir <autostart.ini@gmail.com> <sgeto@ettercap-project.org>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -23,6 +22,11 @@
 # SOFTWARE.
 
 # Config
+
+# next level shit:
+# https://www.autoitconsulting.com/site/scripting/autoit-cmdlets-for-windows-powershell/
+
+# Config
 $urlPath = "https://nmap.org/npcap/dist/latest-npcap-installer.exe"
 $autoit = 'Run ("latest-npcap-installer.exe /disable_restore_point=yes /npf_startup=yes /loopback_support=yes /dlt_null=no /admin_only=no /dot11_support=yes /vlan_support=yes /winpcap_mode=yes")
 WinWait ("Npcap", "License Agreement")
@@ -32,8 +36,7 @@ Send ("!a")
 Send ("!i")
 WinWaitActive ("Npcap", "Installation Complete")
 Send ("!n")
-WinWaitActive ("Npcap")
-WinKill ("Npcap")'
+Send("{Enter}")'
 
 ############
 
@@ -47,19 +50,19 @@ echo "Download the latest Npcap installer"
 
 # https://www.reddit.com/r/PowerShell/comments/3qndf4/not_sure_if_possible_want_to_check_if_file_from/
 # https://github.com/ratchetnclank/NSClient-Checks/blob/master/check-screenconnectupdate.ps1
-$LocalDirectory = $PSScriptRoot
+# $LocalDirectory = $PSScriptRoot
+# _________
+# $LocalFile = "latest-npcap-installer.exe"
 
-$LocalFile = "latest-npcap-installer.exe"
+# $Variable = $urlPath
 
-$Variable = $urlPath
+# $Response = (Invoke-WebRequest -Uri $Variable -UseBasicParsing).Links
 
-$Response = (Invoke-WebRequest -Uri $Variable -UseBasicParsing).Links
+# $Response.Href -Match 'exe' | ForEach-Object { If(($_ -Split '/')[3] -eq $LocalFile){ $NewFile = ($_).Split('/')[3] ; Invoke-WebRequest -Uri $_ -OutFile $LocalDirectory\$NewFile }}
 
-$Response.Href -Match 'exe' | ForEach-Object { If(($_ -Split '/')[3] -eq $LocalFile){ $NewFile = ($_).Split('/')[3] ; Invoke-WebRequest -Uri $_ -OutFile $LocalDirectory\$NewFile }}
-
-$LocalFile = $NewFile
-
-# wget $urlPath -UseBasicParsing -OutFile $PSScriptRoot"\latest-npcap-installer.exe"
+# $LocalFile = $NewFile
+# -------
+wget $urlPath -UseBasicParsing -OutFile $PSScriptRoot"\latest-npcap-installer.exe"
 
 ############
 
@@ -70,7 +73,7 @@ Start-Process -FilePath "Aut2exe.exe" -ArgumentList "/in InstallNpcap.au3 /out I
 # Aut2exe.exe /in InstallNpcap.au3 /out InstallNpcap.exe /nopack /comp 2 /Console
 
 echo "Run InstallNpcap.exe"
-Start-Process -FilePath .\InstallNpcap.exe -NoNewWindow
+Start-Process -FilePath .\InstallNpcap.exe -NoNewWindow -wait
 
 # Success!
 echo "Npcap installation completed"
