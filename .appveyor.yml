@@ -259,7 +259,7 @@ install:
             vcpkg install openssl zlib pthreads
         } else {
             Write-Host -ForegroundColor White -BackgroundColor Green "MinGW$env:ARCH!"
-            # .\contrib\InstallNpcap.ps1
+            .\contrib\InstallNpcap.ps1
           }
         }
   # Clone the submodules.
