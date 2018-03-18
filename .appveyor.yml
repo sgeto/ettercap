@@ -255,7 +255,7 @@ install:
         Write-Host -ForegroundColor White -BackgroundColor Green "This is NOT Linux!"
           if ($env:GEN -eq "Visual Studio 15 2017") {
             Write-Host -ForegroundColor White -BackgroundColor Green "Visual Studio 15 2017!"
-            vcpkg install openssl zlib
+            vcpkg install openssl zlib pthreads
         } else {
             Write-Host -ForegroundColor White -BackgroundColor Green "MinGW$env:ARCH!"
             .\contrib\InstallNpcap.ps1
