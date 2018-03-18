@@ -215,7 +215,7 @@ environment:
 
 matrix:
   # Immediately finish build if any job fails.
-  fast_finish: true
+  # fast_finish: true
   # XXX - remove me!
   allow_failures:
     - ARCH: 32
@@ -248,7 +248,7 @@ install:
         Write-Host -ForegroundColor White -BackgroundColor Green "sudo apt install -y bison cmake flex groff libbsd-dev  libltdl-dev libncurses5-dev  libpcap-dev libpcre3-dev libssl-dev libgeoip-dev $env:APTPKG"
         sudo apt update
         sudo apt upgrade --assume-yes
-        sudo apt install -y bison cmake flex groff libbsd-dev  libltdl-dev libncurses5-dev  libpcap-dev libpcre3-dev libssl-dev libgeoip-dev $env:APTPKG
+        sudo apt install -y bison cmake flex groff libbsd-dev  libltdl-dev libncurses5-dev  libpcap-dev libpcre3-dev libssl-dev libgeoip-dev "$env:APTPKG"
         }
       } else {
         Write-Host -ForegroundColor White -BackgroundColor Green "This is NOT Linux!"
