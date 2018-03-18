@@ -179,7 +179,7 @@ environment:
   matrix:
   - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
     CMAKE_LINT: True
-    # APPVEYOR_SKIP_FINALIZE_ON_EXIT: true
+    APPVEYOR_SKIP_FINALIZE_ON_EXIT: true
   - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
     GEN: "Unix Makefiles"
     GTK: GTK3
