@@ -253,7 +253,7 @@ install:
         }
       } else {
         Write-Host -ForegroundColor White -BackgroundColor Green "This is NOT Linux!"
-          if ($env:GEN -eq "Visual Studio 15 2017") {
+          if ($env:GEN -match "Visual Studio 15 2017*") {
             Write-Host -ForegroundColor White -BackgroundColor Green "Visual Studio 15 2017!"
             vcpkg update
             vcpkg install openssl zlib pthreads
@@ -294,12 +294,12 @@ before_build:
       if (!$env:CMAKE_LINT) {
         mkdir build
         cd build
-        if (($isWindows) -and ($env:GEN -eq "Visual Studio 15 2017")) {
+        if (($isWindows) -and ($env:GEN -match "Visual Studio 15 2017*")) {
           cmake -G"$env:GEN" "$env:BUILD_ARGS" -DCMAKE_TOOLCHAIN_FILE=c:/Tools/vcpkg/scripts/buildsystems/vcpkg.cmake -DLIBRARY_BUILD=ON ..
         } else {
           Write-Host -ForegroundColor White -BackgroundColor Green "This is not Visual Studio!"
           Write-Host -ForegroundColor White -BackgroundColor Green "CMAKE_BUILD_TYPE = $env:BUILD_TYPE"
-          cmake -G"$env:GEN" "$env:DEV_ARGS" -DGTK_BUILD_TYPE="$env:GTK" -DENABLE_IPV6="$env:IPV6" -DENABLE_LUA=on -DENABLE_PDF_DOCS=on -DENABLE_TESTS=On -DSYSTEM_LIBS="$env:SYSTEM_LIBS" -DCMAKE_BUILD_TYPE="$env:BUILD_TYPE" ..
+          cmake -G"$env:GEN" "$env:DEV_ARGS" -DGTK_BUILD_TYPE="$env:GTK" -DENABLE_IPV6="$env:IPV6" -DENABLE_LUA=ON -DENABLE_PDF_DOCS=ON -DENABLE_TESTS=ON -DSYSTEM_LIBS="$env:SYSTEM_LIBS" -DCMAKE_BUILD_TYPE="$env:BUILD_TYPE" ..
         }
       }
 
@@ -316,7 +316,7 @@ build_script:
           } else {
           throw "cmake-lint error. Please check the above error messages."
           }
-      } elseif ($env:GEN -eq "Visual Studio 15 2017") {
+      } elseif ($env:GEN -match "Visual Studio 15 2017*") {
           cmake -G"$env:GEN" "$env:BUILD_ARGS" -DLIBRARY_BUILD=ON -DCMAKE_BUILD_TYPE=$env:BUILD_TYPE ..
       } else {
           Write-Host -ForegroundColor White -BackgroundColor Green "This is Linux!"
