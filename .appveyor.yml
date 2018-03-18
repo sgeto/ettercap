@@ -183,11 +183,19 @@ environment:
     GTK: GTK3
     GTKPKG: libgtk-3-dev
     IPV6: ON
+    SYSTEM_LIBS: ON
   - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
     GENERATOR: "Unix Makefiles"
     GTK: GTK2
     GTKPKG: libgtk2.0-dev
     IPV6: OFF
+    SYSTEM_LIBS: ON
+  - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+    GENERATOR: "Unix Makefiles"
+    GTK: GTK3
+    GTKPKG: libgtk-3-dev
+    IPV6: ON
+    SYSTEM_LIBS: OFF
   - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
     GENERATOR: "Visual Studio 15 2017"
     ARCH: 32
@@ -277,7 +285,7 @@ before_build:
         } else {
           Write-Host -ForegroundColor White -BackgroundColor Green "This is not Visual Studio!"
           Write-Host -ForegroundColor White -BackgroundColor Green "CMAKE_BUILD_TYPE = $env:BUILD_TYPE"
-          cmake -G"$env:GENERATOR" "$env:DEV_ARGS" -DGTK_BUILD_TYPE="$env:GTK" -DENABLE_IPV6="$env:IPV6" -DENABLE_LUA=on -DENABLE_PDF_DOCS=on -DENABLE_TESTS=On -DCMAKE_BUILD_TYPE="$env:BUILD_TYPE" ..
+          cmake -G"$env:GENERATOR" "$env:DEV_ARGS" -DGTK_BUILD_TYPE="$env:GTK" -DENABLE_IPV6="$env:IPV6" -DENABLE_LUA=on -DENABLE_PDF_DOCS=on -DENABLE_TESTS=On -DSYSTEM_LIBS="$env:SYSTEM_LIBS" -DCMAKE_BUILD_TYPE="$env:BUILD_TYPE" ..
         }
       }
 
