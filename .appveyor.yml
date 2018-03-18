@@ -224,6 +224,7 @@ matrix:
 cache:
 # - etterdeps.7z
 - C:\Tools\vcpkg\downloads
+- C:\Tools\vcpkg\packages
 - C:\Tools\vcpkg\installed
 
 # XXX - is sending output to null a good idea in "install"?
@@ -254,9 +255,10 @@ install:
         Write-Host -ForegroundColor White -BackgroundColor Green "This is NOT Linux!"
           if ($env:GEN -eq "Visual Studio 15 2017") {
             Write-Host -ForegroundColor White -BackgroundColor Green "Visual Studio 15 2017!"
-            vcpkg install openssl
+            vcpkg install openssl zlib
         } else {
             Write-Host -ForegroundColor White -BackgroundColor Green "MinGW$env:ARCH!"
+            .\contrib\InstallNpcap.ps1
           }
         }
   # Clone the submodules.
