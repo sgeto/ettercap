@@ -201,9 +201,11 @@ environment:
   - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
     GEN: "Visual Studio 15 2017"
     ARCH: 32
+    VCPKG_DEFAULT_TRIPLET: x86-windows
   - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
     GEN: "Visual Studio 15 2017 Win64"
     ARCH: 64
+    VCPKG_DEFAULT_TRIPLET: x64-windows
   - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
     GEN: "MSYS Makefiles"
     ARCH: 32
@@ -246,13 +248,13 @@ install:
         Write-Host -ForegroundColor White -BackgroundColor Green "This is Linux!"
         sudo apt update -qq
         sudo apt upgrade --assume-yes -qq
-        sudo apt install -y bison check cmake flex groff libbsd-dev libcurl4-openssl-dev libltdl-dev libluajit-5.1-dev libncurses5-dev libnet1-dev libpcap-dev libpcre3-dev libssl-dev libgeoip-dev libidn11-dev librtmp-dev $env:GTKPKG
+        sudo apt install -y -q bison check cmake flex groff libbsd-dev libcurl4-openssl-dev libltdl-dev libluajit-5.1-dev libncurses5-dev libnet1-dev libpcap-dev libpcre3-dev libssl-dev libgeoip-dev libidn11-dev librtmp-dev $env:GTKPKG
         }
       } else {
         Write-Host -ForegroundColor White -BackgroundColor Green "This is NOT Linux!"
           if ($env:GEN -eq "Visual Studio 15 2017") {
             Write-Host -ForegroundColor White -BackgroundColor Green "Visual Studio 15 2017!"
-            vcpkg install openssl:$env:PLATFORM-windows
+            vcpkg install openssl
         } else {
             Write-Host -ForegroundColor White -BackgroundColor Green "MinGW$env:ARCH!"
           }
