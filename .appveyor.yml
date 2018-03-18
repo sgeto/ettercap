@@ -219,9 +219,10 @@ matrix:
     - ARCH: 32
     - ARCH: 64
 
-# cache:
+cache:
 # - etterdeps.7z
-# - C:\Tools\vcpkg\installed
+- C:\Tools\vcpkg\downloads
+- C:\Tools\vcpkg\installed
 
 # XXX - is sending output to null a good idea in "install"?
 #       The build won't be considered failed if anything fails here.
@@ -249,7 +250,13 @@ install:
         }
       } else {
         Write-Host -ForegroundColor White -BackgroundColor Green "This is NOT Linux!"
-      }
+          if ($env:GEN -eq "Visual Studio 15 2017") {
+            Write-Host -ForegroundColor White -BackgroundColor Green "Visual Studio 15 2017!"
+            vcpkg install openssl:$env:PLATFORM-windows
+        } else {
+            Write-Host -ForegroundColor White -BackgroundColor Green "MinGW$env:ARCH!"
+          }
+        }
   # Clone the submodules.
   - git submodule update --init --recursive
 # XXX - Please ensure you're using the latest portfiles with `.\vcpkg update`
