@@ -87,25 +87,26 @@
 # Notes/TODOs/Thoughts:
 # ---------------------------
 #
-# 1. AppVeyor's Ubuntu reference is found here:
+#  1. AppVeyor's Ubuntu reference is found here:
 #    https://www.appveyor.com/docs/getting-started-with-appveyor-for-linux/
-# 2. Append "sudo" to commands that require root (duh!).
-# 3. If a command has long options, please use them.
-# 4. YALM hates you too. Read its documentation.
-# 5. Speaking of YALM: - If a value starts with *, surround it with single
-#                        quotes. See "skip_commits" and "artifacts" below.
-#                      - If the first character of a command is a double quotes.
-#                        escape it.
-# 6. Keep Powershell commands simple, or add comments where appropriate.
-# 5. Speaking of posh: - If your editor supports syntax highlighting for
-#                        Powershell, use it. You're welcome.
-#                      - Escape (newline) character with '`'
-# 7. Keep lines below 80 characters.
-# 8. AppVeyor's Build Worker API documentation:
-#    https://www.appveyor.com/docs/build-worker-api/
-# 9. Speaking of AppVeyor's Build Worker API:
-#                      - Use it.
-#                      - MSBuild's binary log.
+#  2. Append "sudo" to commands that require root (duh!).
+#  3. If a command has long options, please use them.
+#  4. YALM hates you too. Read its documentation.
+#  5. Speaking of YALM: - If a value starts with *, surround it with single
+#                         quotes. See "skip_commits" and "artifacts" below.
+#                       - If the first character of a command is a double quotes.
+#                         escape it.
+#  6. Keep Powershell commands simple, or add comments where appropriate.
+#  5. Speaking of posh: - If your editor supports syntax highlighting for
+#                         Powershell, use it. You're welcome.
+#                       - Escape (newline) character with '`'
+#  7. Keep lines below 80 characters.
+#  8. AppVeyor's Build Worker API documentation:
+#     https://www.appveyor.com/docs/build-worker-api/
+#  9. Speaking of AppVeyor's Build Worker API:
+#                       - Use it.
+#                       - MSBuild's binary log.
+# 10. If the build log exceeds 5000 lines, you'll see only the last 2000 by default
 #
 # --------------------------------delete me---------------------------------------
 # Add-AppveyorMessage -Message <string>
@@ -214,7 +215,7 @@ environment:
 
 matrix:
   # Immediately finish build if any job fails.
-  # fast_finish: true
+  fast_finish: true
   # XXX - remove me!
   allow_failures:
     - ARCH: 32
@@ -246,7 +247,7 @@ install:
         Write-Host -ForegroundColor White -BackgroundColor Green "This is Linux!"
         sudo apt update
         sudo apt upgrade --assume-yes
-        sudo apt install -y bison cmake flex groff libbsd-dev  libltdl-dev libncurses5-dev  libpcap-dev libpcre3-dev libssl-dev libgeoip-dev $env:APTPKG
+        sudo apt install -y bison cmake flex groff libbsd-dev  libltdl-dev libncurses5-dev  libpcap-dev libpcre3-dev libssl-dev libgeoip-dev "$env:APTPKG"
         }
       } else {
         Write-Host -ForegroundColor White -BackgroundColor Green "This is NOT Linux!"
