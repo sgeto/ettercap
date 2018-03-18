@@ -96,11 +96,14 @@
 #                         quotes. See "skip_commits" and "artifacts" below.
 #                       - If the first character of a command is a double quotes.
 #                         escape it.
+#                       - A literal colon must be escaped too. Use "Block scalar
+#                         styles" (>, |) or surround it with double quotes.
 #  6. Keep Powershell commands simple, or add comments where appropriate.
 #  5. Speaking of posh: - If your editor supports syntax highlighting for
 #                         Powershell, use it. You're welcome.
 #                       - Escape (newline) character with '`'
 #  7. Keep lines below 80 characters.
+# See https://stackoverflow.com/questions/3790454/in-yaml-how-do-i-break-a-string-over-multiple-lines
 #  8. AppVeyor's Build Worker API documentation:
 #     https://www.appveyor.com/docs/build-worker-api/
 #  9. Speaking of AppVeyor's Build Worker API:
@@ -249,7 +252,7 @@ install:
         Write-Host -ForegroundColor White -BackgroundColor Green "This is Linux!"
         sudo apt -qq update -o=Dpkg::Use-Pty=0
         sudo apt -qq upgrade -o=Dpkg::Use-Pty=0
-        sudo apt -qq install -qq -o=Dpkg::Use-Pty=0 bison check cmake flex groff libbsd-dev libcurl4-openssl-dev libltdl-dev libluajit-5.1-dev libncurses5-dev libnet1-dev libpcap-dev libpcre3-dev libssl-dev libgeoip-dev libidn11-dev librtmp-dev $env:GTKPKG
+        sudo apt install -qq -o=Dpkg::Use-Pty=0 bison check cmake flex groff libbsd-dev libcurl4-openssl-dev libltdl-dev libluajit-5.1-dev libncurses5-dev libnet1-dev libpcap-dev libpcre3-dev libssl-dev libgeoip-dev libidn11-dev librtmp-dev $env:GTKPKG
         }
       } else {
         Write-Host -ForegroundColor White -BackgroundColor Green "This is NOT Linux!"
