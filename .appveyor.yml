@@ -107,11 +107,11 @@
 #                      - Use it.
 #                      - MSBuild's binary log.
 #
---------------------------------delete me---------------------------------------
-Add-AppveyorMessage -Message <string>
-       [-Category <category> {Information | Warning | Error}]
-       [-Details <string>]
---------------------------------delete me---------------------------------------
+# --------------------------------delete me---------------------------------------
+# Add-AppveyorMessage -Message <string>
+       # [-Category <category> {Information | Warning | Error}]
+       # [-Details <string>]
+# --------------------------------delete me---------------------------------------
 
 
 
@@ -277,7 +277,7 @@ before_build:
         } else {
           Write-Host -ForegroundColor White -BackgroundColor Green "This is not Visual Studio!"
           Write-Host -ForegroundColor White -BackgroundColor Green "CMAKE_BUILD_TYPE = $env:BUILD_TYPE"
-          cmake -G"$env:GENERATOR" "$env:DEV_ARGS" -DGTK_BUILD_TYPE=$env:GTK -DENABLE_IPV6=$env:IPV6 -DENABLE_LUA=on -DENABLE_PDF_DOCS=on -DENABLE_TESTS=On -DCMAKE_BUILD_TYPE=$env:BUILD_TYPE ..
+          cmake -G"$env:GENERATOR" "$env:DEV_ARGS" -DGTK_BUILD_TYPE="$env:GTK" -DENABLE_IPV6="$env:IPV6" -DENABLE_LUA=on -DENABLE_PDF_DOCS=on -DENABLE_TESTS=On -DCMAKE_BUILD_TYPE="$env:BUILD_TYPE" ..
         }
       }
 
