@@ -179,7 +179,7 @@ environment:
   matrix:
   - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
     CMAKE_LINT: True
-    APPVEYOR_SKIP_FINALIZE_ON_EXIT: true
+    # APPVEYOR_SKIP_FINALIZE_ON_EXIT: true
   - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
     GEN: "Unix Makefiles"
     GTK: GTK3
@@ -247,9 +247,9 @@ install:
           cd ..
         } else {
         Write-Host -ForegroundColor White -BackgroundColor Green "This is Linux!"
-        sudo apt -qq update
-        sudo apt -qq upgrade --assume-yes
-        sudo apt -qq install -y bison check cmake flex groff libbsd-dev libcurl4-openssl-dev libltdl-dev libluajit-5.1-dev libncurses5-dev libnet1-dev libpcap-dev libpcre3-dev libssl-dev libgeoip-dev libidn11-dev librtmp-dev $env:GTKPKG
+        sudo apt -qq update -o=Dpkg::Use-Pty=0
+        sudo apt -qq upgrade --assume-yes -o=Dpkg::Use-Pty=0
+        sudo apt -qq install --assume-yes -o=Dpkg::Use-Pty=0 bison check cmake flex groff libbsd-dev libcurl4-openssl-dev libltdl-dev libluajit-5.1-dev libncurses5-dev libnet1-dev libpcap-dev libpcre3-dev libssl-dev libgeoip-dev libidn11-dev librtmp-dev $env:GTKPKG
         }
       } else {
         Write-Host -ForegroundColor White -BackgroundColor Green "This is NOT Linux!"
