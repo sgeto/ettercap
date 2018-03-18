@@ -237,7 +237,7 @@ install:
             if (test-path cmake-lint) {
               cd cmake-lint
             } else {
-            throw "Error while cloning or (changing directory to) 'cmake-lint'. Running 'on_failure' and/or 'on_finish' commands instead."
+            throw "Error while cloning (or changing directory to) 'cmake-lint'."
             }
           sudo python setup.py install
           cd ..
@@ -267,7 +267,7 @@ before_build:
         }
       } else {
         Write-Host -ForegroundColor White -BackgroundColor Green "This is NOT Linux!"
-        set PATH=c:\msys64\mingw%ARCH%\bin;c:\msys64\usr\bin;%PATH%
+        $env:PATH="c:\msys64\mingw$env:ARCH\bin;c:\msys64\usr\bin;$env:PATH"
       }
 
   - ps: |
