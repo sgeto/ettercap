@@ -248,13 +248,14 @@ install:
         } else {
         Write-Host -ForegroundColor White -BackgroundColor Green "This is Linux!"
         sudo apt update -qq
-        sudo apt upgrade --assume-yes -qq
-        sudo apt install -y -q bison check cmake flex groff libbsd-dev libcurl4-openssl-dev libltdl-dev libluajit-5.1-dev libncurses5-dev libnet1-dev libpcap-dev libpcre3-dev libssl-dev libgeoip-dev libidn11-dev librtmp-dev $env:GTKPKG
+        sudo apt upgrade -qq --assume-yes
+        sudo apt install -qq -y bison check cmake flex groff libbsd-dev libcurl4-openssl-dev libltdl-dev libluajit-5.1-dev libncurses5-dev libnet1-dev libpcap-dev libpcre3-dev libssl-dev libgeoip-dev libidn11-dev librtmp-dev $env:GTKPKG
         }
       } else {
         Write-Host -ForegroundColor White -BackgroundColor Green "This is NOT Linux!"
           if ($env:GEN -eq "Visual Studio 15 2017") {
             Write-Host -ForegroundColor White -BackgroundColor Green "Visual Studio 15 2017!"
+            vcpkg update
             vcpkg install openssl zlib pthreads
         } else {
             Write-Host -ForegroundColor White -BackgroundColor Green "MinGW$env:ARCH!"
