@@ -184,7 +184,7 @@ environment:
     GTK: GTK3
     IPV6: ON
     SYSTEM_LIBS: ON
-    APTPKG: "check libnet1-dev libluajit-5.1-dev libcurl4-openssl-dev libgtk-3-dev"
+    APTPKG: check libnet1-dev libluajit-5.1-dev libcurl4-openssl-dev libgtk-3-dev
     # GTKPKG: libgtk-3-dev
   - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
     GEN: "Unix Makefiles"
