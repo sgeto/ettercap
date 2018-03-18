@@ -213,7 +213,7 @@ environment:
 
 matrix:
   # Immediately finish build if any job fails.
-  fast_finish: true
+  # fast_finish: true
   # XXX - remove me!
   allow_failures:
     - ARCH: 32
@@ -243,8 +243,8 @@ install:
           cd ..
         } else {
         Write-Host -ForegroundColor White -BackgroundColor Green "This is Linux!"
-        sudo apt update
-        sudo apt upgrade --assume-yes
+        sudo apt update -qq
+        sudo apt upgrade --assume-yes -qq
         sudo apt install -y bison check cmake flex groff libbsd-dev libcurl4-openssl-dev libltdl-dev libluajit-5.1-dev libncurses5-dev libnet1-dev libpcap-dev libpcre3-dev libssl-dev libgeoip-dev libidn11-dev librtmp-dev $env:GTKPKG
         }
       } else {
@@ -283,7 +283,7 @@ before_build:
         mkdir build
         cd build
         if (($isWindows) -and ($env:GEN -eq "Visual Studio 15 2017")) {
-          cmake -G"$env:GEN" "$env:BUILD_ARGS" -DLIBRARY_BUILD=ON ..
+          cmake -G"$env:GEN" "$env:BUILD_ARGS" -DCMAKE_TOOLCHAIN_FILE=c:/Tools/vcpkg/scripts/buildsystems/vcpkg.cmake -DLIBRARY_BUILD=ON ..
         } else {
           Write-Host -ForegroundColor White -BackgroundColor Green "This is not Visual Studio!"
           Write-Host -ForegroundColor White -BackgroundColor Green "CMAKE_BUILD_TYPE = $env:BUILD_TYPE"
