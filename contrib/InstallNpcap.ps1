@@ -21,12 +21,13 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# Config
-
-# next level shit:
+# TODO
+# ----
+# - next level shit:
 # https://www.autoitconsulting.com/site/scripting/autoit-cmdlets-for-windows-powershell/
-
-# Config
+# - integrate into AppVeyor's Build Worker API
+#
+# Variables
 $urlPath = "https://nmap.org/npcap/dist/latest-npcap-installer.exe"
 $autoit = 'Run ("latest-npcap-installer.exe /disable_restore_point=yes /npf_startup=yes /loopback_support=yes /dlt_null=no /admin_only=no /dot11_support=yes /vlan_support=yes /winpcap_mode=yes")
 WinWait ("Npcap", "License Agreement")
@@ -67,13 +68,13 @@ wget $urlPath -UseBasicParsing -OutFile $PSScriptRoot"\latest-npcap-installer.ex
 ############
 
 echo "Generate InstallNpcap.exe from InstallNpcap.au3"
-Start-Process -FilePath "Aut2exe.exe" -ArgumentList "/in InstallNpcap.au3 /out InstallNpcap.exe /nopack /comp 2 /Console" -NoNewWindow -Wait
+Start-Process -FilePath "Aut2exe.exe" -ArgumentList "/in .\contrib\InstallNpcap.au3 /out .\contrib\InstallNpcap.exe /nopack /comp 2 /Console" -NoNewWindow -Wait
 # Invoke-Expression "cmd.exe /c Aut2exe.exe /in InstallNpcap.au3 /out InstallNpcap.exe /nopack /comp 2 /Console"
 
 # Aut2exe.exe /in InstallNpcap.au3 /out InstallNpcap.exe /nopack /comp 2 /Console
 
 echo "Run InstallNpcap.exe"
-Start-Process -FilePath .\InstallNpcap.exe -NoNewWindow -wait
+Start-Process -FilePath $PSScriptRoot"\InstallNpcap.exe" -NoNewWindow -wait
 
 # Success!
 echo "Npcap installation completed"
