@@ -1,0 +1,110 @@
+Etterdeps:
+Future:
+wsock-trace
+   - talk to gisle
+   - use vcpkg's luajit?
+   - fix up a vcpkg-only cmake script. Based on winsock?
+   - what apps/config files should we bundle? Is it possible that they can be installed/honor a unix filesystem structure?
+portable npf/PSSDK
+   - talk to Edward
+   - fix up and bundle it with ettercap prebuilds/binaries
+dummynet
+   - either you get it working/up-to-date, portable, self-sufficent, and smart (load/unload at runtime itself at runtime), or you figure out how to do port forwarding natively (via netsh or programically there must be a C API for that, right?)
+Missing:
+libnet
+   - talk to guys
+   - make it the defacto standart.
+   - prefer static and/or
+   - make it consume static pcap (which should also consume static packet-API (remember that that the packet-API must export its stuff. Does it even work like this?
+pcap alt
+    - alternatively fix up a nice and complete pcap library, call it wpcap(?), and always keep it alongside ettercap.exe
+geoip
+    - until we upgrade to geoip2 we should get it somehow bundled. If it's not too complicated, fix up a CMake script for integration with vcpkg.
+    - don't forget to download and install geoip's lite databases using my script before packaging!
+libcheck
+    - missing only on MSVC (it is? Check nuget/choco). It's not packaged, so don't put too much effort it getting them right. Just use pre-builds or try to build bundled ones.
+pthreads
+    - we'll see if it's needed, probable not.
+    - change/add matrix that creates vcpkg compliant directory hierchy and also possibly remove lib prefix.
+    - finalize add Cmake find module to ettercap-master
+
+
+General:
+- I should let my toolchain file(s) do the complicated, hard-to-remember stuff and heavy lifting...
+ - cmakelint matrix should also handle uncrustify/clang-format once it's ready
+- fast-finish?
+- Convert library build option to ettersdk and provide an install target as well as add it to some sort of separate package/artifact/deb/rpm/etc.
+Use cpack for that.
+- Also use cpack to create releases (tar/zip) and upload to github release page.
+Ask the guys if they have space on some internet-facing FTP/http server where I could add bleeding edge binaries, 
+- Windows: build as statically as possible
+
+Environment:
+Global:
+- Add vcpkg's and etterdeps's Include and lib directories in a way that is honored by MinGW/clang/CMake
+- can Cmake defines (like toolchain file) defined as environment variables?
+If windows!!!!
+HOME=%USERPROFILE%
+Endif!!!!!
+
+Cache:
+cache cmakelint installation
+   - use Global Pythonpath env to point to it
+   - make a wheel package out of it and keep it with the other deps.
+cache vcpkg_root
+   - set up private root dir maybe in ettercap root
+cache bundled dependencies
+cache choco packages
+    - set up custom privat cinstal root dir similar to pypy
+cache geoip databases
+update and cache etter.finger.mac
+cache android deps
+
+
+Notification:
+- IRC channel
+- Mailing list
+- Appveyor bot
+- Better template
+    - use better variables
+    - catch stderror, store in variable and add to template.
+
+Matrix:
+- Don't wait for allowed failures to finish.
+MSVC/clang (default?)
+MinGW/clang?
+Linux/clang?)
+Ubuntu - Full (gtk3)
+Ubuntu - Full (gtk2)
+Ubuntu - Full (bundle deps)
+MinGW Full (use vcpkg)
+MinGW Full (gtk3)
+MinGW Full (gtk2)
+MinGW Full (bundled depd)
+
+Idle:
+  Msys2/Cygwin
+  Android/cross
+
+
+Install:
+vcpkg
+   - keep cache
+   - make sure it's always up-to-data (run vcpkg --version or whatever)
+
+On success/failure
+- add covertly scan, code clima, code etc. adjust debug compiler/linker flags appropriately.
+- try to print cmakelint output in color. Codecov's shell script does it.
+Or at least add a posh throw message.
+- windows: 
+   - provide etterdeps artifacts no matter how the build turned out.
+- if build fails collect a bunch of logs, zip them and offer as artifacts
+
+deploy:
+   - releases
+   - nuget/chocolatey
+   - upload to server
+
+Artifacts:
+- push a text file alone with prebuilds that hold sha256 values of them. This will require packaging/compressing them manually.
+Can either be done as part of the artifacts YALM option or in after success?

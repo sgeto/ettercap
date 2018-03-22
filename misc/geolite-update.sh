@@ -10,8 +10,22 @@
 # You can optionally pass an alternative install path to this script.
 # If you rather not, it will install all files to /usr/local/share/GeoIP/.
 # Note: In some distributions/operating systems these databases are available
-# through their package manager.
+# through their package manager (geoip-database and geoip-database-extra).
 # You most likely don't need to use this script if this is the case.
+
+
+see geoip's makefile.vs for the default istall directories
+GEOIPDATADIR="C:\\Windows\\SYSTEM32"
+
+Free users should create symlinks for the GeoIP databases.
+For example:
+
+```
+cd /usr/local/share/GeoIP
+ln -s GeoLiteCity.dat GeoIPCity.dat
+ln -s GeoLiteCountry.dat GeoIPCountry.dat
+ln -s GeoLiteASNum.dat GeoIPASNum.dat
+```
 
 USAGE="USAGE: $(basename $0) [geolite install path]"
 
@@ -40,7 +54,7 @@ if [ ! -e $geolite_path ]; then
         exit 1
 fi
 
-echo "Updating/Installing GeoLite databases..."
+echo "Updating/Installing and symlinking GeoLite databases..."
 echo "Note: Not installing GeoLiteCity database (not used by Ettercap)"
 
 [ -d $download_path ] || mkdir $download_path
@@ -51,6 +65,11 @@ if [ ! -e $download_path/GeoIP.dat.gz ]; then
         exit 1
 fi
 gunzip -c $download_path/GeoIP.dat.gz > $geolite_path/GeoIP.dat
+
+# Free users should create symlinks for the GeoIP databases.
+ln -s $geolite_path/GeoIP.dat $geolite_path/GeoIPCountry.dat
+ln -s $geolite_path/GeoIP.dat $geolite_path/GeoLiteCountry.dat
+
 rm -f $download_path/GeoIP.dat.gz
 
 # Ettercap doesn't use the GeoLiteCity database... yet.
@@ -61,6 +80,7 @@ rm -f $download_path/GeoIP.dat.gz
 #        exit 1
 # fi
 # gunzip -c $download_path/GeoLiteCity.dat.gz > $geolite_path/GeoLiteCity.dat
+# ln -s $geolite_path/GeoLiteCity.dat $geolite_path/GeoIPCity.dat
 # rm -f $download_path/GeoLiteCity.dat.gz
 
 $prg http://geolite.maxmind.com/download/geoip/database/GeoIPv6.dat.gz
@@ -69,6 +89,11 @@ if [ ! -e $download_path/GeoIPv6.dat.gz ]; then
         exit 1
 fi
 gunzip -c $download_path/GeoIPv6.dat.gz > $geolite_path/GeoIPv6.dat
+
+# Free users should create symlinks for the GeoIP databases.
+ln -s $geolite_path/GeoIPv6.dat $geolite_path/GeoIPv6Country.dat
+ln -s $geolite_path/GeoIPv6.dat $geolite_path/GeoGeoIPv6LiteCountry.dat
+
 rm -f $download_path/GeoIPv6.dat.gz
 
 echo "Done."

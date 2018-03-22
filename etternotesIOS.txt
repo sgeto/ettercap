@@ -1,0 +1,37 @@
+From /var/root/arpon/man8:
+Use this for sysconfinstall:
+if(${CMAKE_INSTALL_PREFIX} MATCHES "$/*")
+Note that Android root path is different
+Note that macOS's user root path has its own etc directory
+So maybe: 
+if(NOT OS_LINUX OR ${CMAKE_INSTALL_PREFIX} MATCHES "$/usr/*")
+
+redirect and cache chocolatey's download cache.
+
+arpon's HTML docs and cmakelist.txt to install them are/is pretty badass. Borrow it.
+
+Could/should ettercap debug log reside in /var/log instead?
+
+Move cmakeconfig.h.in to top level directory and adjust clean-all target, cmakelist, includedirectory() ect.
+
+Add src release target?
+
+Make it IDE friendly. Where did I put the HTML for that???? Check edge history.
+
+
+Use a combination of if(${CMAKE_INSTALL_PREFIX} MATCHES "$/*") and 64bit subdir for pcap installation. Get to the bottom of this variables used by arpon CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT
+
+Don't limit Cmake-build-type (on windows)
+
+Find a way to distinguish between clang/MSVC vs MSVC. Is there a buildin LLVM variable in Cmake?
+
+Never overwrite (CMAKE_MODULE_PATH. Use list-Append, list-Insert -0, or set(cmakemodulepath ${cmakemodulepath} blahblahblah)
+
+From arpon:
+string(TOLOWER "${CMAKE_BUILD_TYPE}" cmake_build_type_tolower)
+
+if(cmake_build_type_tolower STREQUAL "debug")
+    message(STATUS "Build type: Debug")
+
+    set(CMAKE_BUILD_TYPE "Debug")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -Wextra -Wformat=2 -Winit-self -Wreturn-type -Wswitch-default -Wswitch-enum -Wunused-parameter -Wuninitialized -Wstrict-aliasing=3 -Wstrict-overflow=5 -Wdeclaration-after-statement -Wundef -Wpointer-arith -Wunsafe-loop-optimizations -Wbad-function-cast -Wcast-qual -Wcast-align -Wwrite-strings -Wconversion -Wsizeof-pointer-memaccess -Wlogical-op -Waggregate-return -Wstrict-prototypes -Wold-style-declaration -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -Wlong-long -Wvariadic-macros -Wvarargs -Wvla -Wdisabled-optimization -Woverlength-strings -O0 -g -ggdb")

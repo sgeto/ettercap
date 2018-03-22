@@ -110,6 +110,7 @@
 #                       - Use it.
 #                       - MSBuild's binary log.
 #10. If the build log exceeds 5000 lines, you'll see only the last 2000 by default
+#10. How to disable `apt install's` progress bar?
 #
 #
 # --------------------------------delete me---------------------------------------
@@ -226,6 +227,7 @@ matrix:
 
 cache:
 # - etterdeps.7z
+- /var/cache/apt/archives/
 - C:\Tools\vcpkg\downloads
 - C:\Tools\vcpkg\packages
 - C:\Tools\vcpkg\installed
@@ -252,7 +254,7 @@ install:
         Write-Host -ForegroundColor White -BackgroundColor Green "This is Linux!"
         sudo apt -qq update -o=Dpkg::Use-Pty=0
         sudo apt -qq upgrade -o=Dpkg::Use-Pty=0
-        sudo apt install -qq --assume-yes -o=Dpkg::Use-Pty=0 bison check cmake flex groff libbsd-dev libcurl4-openssl-dev libltdl-dev libluajit-5.1-dev libncurses5-dev libnet1-dev libpcap-dev libpcre3-dev libssl-dev libgeoip-dev libidn11-dev librtmp-dev $env:GTKPKG
+        sudo apt-get install -qq --assume-yes -o=Dpkg::Use-Pty=0 bison check cmake flex groff libbsd-dev libcurl4-openssl-dev libltdl-dev libluajit-5.1-dev libncurses5-dev libnet1-dev libpcap-dev libpcre3-dev libssl-dev libgeoip-dev geoip-database libidn11-dev librtmp-dev $env:GTKPKG
         }
       } else {
         Write-Host -ForegroundColor White -BackgroundColor Green "This is NOT Linux!"
