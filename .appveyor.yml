@@ -227,10 +227,10 @@ matrix:
 
 cache:
 # - etterdeps.7z
-- /var/cache/apt/archives/
-- C:\Tools\vcpkg\downloads
-- C:\Tools\vcpkg\packages
-- C:\Tools\vcpkg\installed
+  - '**/apt_cache'
+  - C:\Tools\vcpkg\downloads
+  - C:\Tools\vcpkg\packages
+  - C:\Tools\vcpkg\installed
 
 # XXX - is sending output to null a good idea in "install"?
 #       The build won't be considered failed if anything fails here.
@@ -252,9 +252,10 @@ install:
           cd ..
         } else {
         Write-Host -ForegroundColor White -BackgroundColor Green "This is Linux!"
+        mkdir -p apt_cache/partial
         sudo apt -qq update -o=Dpkg::Use-Pty=0
-        sudo apt-get -qq upgrade -o=Dpkg::Use-Pty=0
-        sudo apt-get -qq install -o=Dpkg::Use-Pty=0 bison check cmake flex groff libbsd-dev libcurl4-openssl-dev libltdl-dev libluajit-5.1-dev libncurses5-dev libnet1-dev libpcap-dev libpcre3-dev libssl-dev libgeoip-dev geoip-database libidn11-dev librtmp-dev $env:GTKPKG
+        sudo apt-get -o dir::cache::archives="apt_cache" -qq upgrade -o=Dpkg::Use-Pty=0
+        sudo apt-get -o dir::cache::archives="apt_cache" -qq install -o=Dpkg::Use-Pty=0 bison check cmake flex groff libbsd-dev libcurl4-openssl-dev libltdl-dev libluajit-5.1-dev libncurses5-dev libnet1-dev libpcap-dev libpcre3-dev libssl-dev libgeoip-dev geoip-database libidn11-dev librtmp-dev $env:GTKPKG
         }
       } else {
         Write-Host -ForegroundColor White -BackgroundColor Green "This is NOT Linux!"
