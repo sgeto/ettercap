@@ -261,7 +261,7 @@ install:
           if ($env:GEN -match "Visual Studio 15 2017") {
             Write-Host -ForegroundColor White -BackgroundColor Green "Visual Studio 15 2017!"
             vcpkg update
-            vcpkg install openssl zlib pthreads
+            vcpkg install openssl zlib pthreads winpcap
         } else {
             Write-Host -ForegroundColor White -BackgroundColor Green "MinGW$env:ARCH!"
             .\contrib\InstallNpcap.ps1
@@ -333,7 +333,7 @@ build_script:
 
 test_script:
   - ps: |
-      ctest --output-on-failure --interactive-debug-mode 0 -C Debug -V
+      ctest --output-on-failure --interactive-debug-mode 0 --build-config $env:BUILD_TYPE --verbose
 
 # XXX - add AppVeyor bot
 # XXX - add IRC
