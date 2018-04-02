@@ -165,6 +165,10 @@ clone_depth: 5
 
 environment:
   global:
+  # Make debconf use a frontend that expects no interactive input at all,
+  # preventing it from even trying to access stdin
+    DEBIAN_FRONTEND: noninteractive
+    DEBIAN_PRIORITY: critical
     # Uncomment to disables execution of PowerShell commands on Linux-based
     # images. I wouldn't blame you if you did.
     # APPVEYOR_YML_DISABLE_PS_LINUX: true
