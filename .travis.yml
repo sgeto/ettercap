@@ -88,6 +88,8 @@ env:
   - BUILD_ARGS="-DENABLE_CURSES=Off"
   # Disable Curses and Gtk
   - BUILD_ARGS="-DENABLE_GTK=Off -DENABLE_CURSES=Off"
+  # Just libettercap in Debug-mode and with most features enabled
+  - BUILD_ARGS="-DLIBRARY_BUILD=ON -DCMAKE_BUILD_TYPE=Debug -DENABLE_IPV6=ON -DENABLE_LUA=ON"
 
 matrix:
   allow_failures:
@@ -147,8 +149,10 @@ script:
   - mkdir build
   - cd build
   - cmake -DENABLE_TESTS=On $BUILD_ARGS ..
-  - make
-  - make test_verbose
+  - cmake --build . --target install -- --jobs --no-print-directory
+  - ctest --output-on-failure --interactive-debug-mode 0 --verbose
+  - cmake --build . --target uninstall -- --jobs --no-print-directory
+  - cmake --build . --target clean-all -- --jobs --no-print-directory
 
 notifications:
   irc:

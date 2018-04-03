@@ -1,0 +1,356 @@
+#
+# (C) 2018 Ettercap Development Team.
+#
+# This file is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+# AppVeyor Build Configuration 101
+# ================================
+#
+# General Build Flow:
+# -------------------
+#
+# 1. init scripts
+# 2. Update /etc/hosts file
+# 3. Clone repository
+# 4. Restore build cache
+# 5. Configure stack
+# 6. install scripts
+# 7. Start services
+# 8. Patch version in .csproj and AssemblyInfo.cs files
+# 9. “build” phase
+# 10. “test” phase
+# 11. “package” phase
+# 12. “deploy” phase
+# 13. on_success scripts
+# 14. on_failure scripts (if the build has failed)
+# 15. on_finish scripts
+#
+# "Tweakable" Environment Variables
+# ---------------------------------
+#
+# NOTE: 
+# - DON'T ADD/CHANGE THESE VARIABLES UNLESS YOU KNOW WHAT YOU'RE DOING.
+# - Our build cache is fairly huge and takes more than an hour to be rebuild.
+#   AN HOUR is exactly as long as you have before your commit is mark as failed.
+#   Be nice to our build cache.
+#
+# Variables set by AppVeyor:
+# ++++++++++++++++++++++++++
+#
+# This list is incomplete. See
+# https://www.appveyor.com/docs/environment-variables/ for the full list.
+#
+# APPVEYOR_FILE_DOWNLOAD_TIMEOUT - timeout in seconds to download arbitrary
+#                                  files using appveyor DownloadFile command.
+#                                  Default is 300 (5 minutes)
+# APPVEYOR_REPOSITORY_SHALLOW_CLONE_TIMEOUT - timeout in seconds to download
+#                                             repository (GitHub, Bitbucket or
+#                                             VSTS) as zip file (shallow clone).
+#                                             Default is 1800 (30 minutes)
+# APPVEYOR_CACHE_ENTRY_UPLOAD_DOWNLOAD_TIMEOUT - timeout in seconds to download
+#                                                or upload each cache entry.
+#                                                Default is 300 (5 minutes)
+# APPVEYOR_CACHE_SKIP_RESTORE    - set to true to disable cache restore
+# APPVEYOR_CACHE_SKIP_SAVE       - set to true to disable cache update
+# APPVEYOR_BUILD_WORKER_IMAGE    - set build worker image for build to run on.
+#                                  Can be done only at build configuration
+#                                  level, not at build time.
+# APPVEYOR_SKIP_FINALIZE_ON_EXIT - if appveyor exit or Exit-AppVeyor build was
+#                                  called, exit build even without Finalize
+#                                  steps (on_success, on_finish scripts and
+#                                  build cache save)
+# APPVEYOR_SAVE_CACHE_ON_ERROR   - save build cache on build failure. By default
+#                                  build cache is being saved only during
+#                                  successful build Finalize steps
+#
+# Variables set by the Ettercap Development Team:
+# +++++++++++++++++++++++++++++++++++++++++++++++
+# XXX - Keep this list up-to-date
+#
+# CMAKE_LINT   - 
+#
+# enable_debug - (lowercase) most of our scripts output detailed messages when
+#                this variable is set.
+#
+# Notes/TODOs/Thoughts:
+# ---------------------------
+#
+#  1. AppVeyor's Ubuntu reference is found here:
+#    https://www.appveyor.com/docs/getting-started-with-appveyor-for-linux/
+#  2. Append "sudo" to commands that require root (duh!).
+#  3. If a command has long options, please use them.
+#  4. YALM hates you too. Read its documentation.
+#  5. Speaking of YALM: - If a value starts with *, surround it with single
+#                         quotes. See "skip_commits" and "artifacts" below.
+#                       - If the first character of a command is a double quotes.
+#                         escape it.
+#                       - A literal colon must be escaped too. Use "Block scalar
+#                         styles" (>, |) or surround it with double quotes.
+#  6. Keep Powershell commands simple, or add comments where appropriate.
+#  5. Speaking of posh: - If your editor supports syntax highlighting for
+#                         Powershell, use it. You're welcome.
+#                       - Escape (newline) character with '`'
+#  7. Keep lines below 80 characters.
+# See https://stackoverflow.com/questions/3790454/in-yaml-how-do-i-break-a-string-over-multiple-lines
+#  8. AppVeyor's Build Worker API documentation:
+#     https://www.appveyor.com/docs/build-worker-api/
+#  9. Speaking of AppVeyor's Build Worker API:
+#                       - Use it.
+#                       - MSBuild's binary log.
+#10. If the build log exceeds 5000 lines, you'll see only the last 2000 by default
+#10. How to disable `apt install's` progress bar?
+#
+#
+# --------------------------------delete me---------------------------------------
+# Add-AppveyorMessage -Message <string>
+       # [-Category <category> {Information | Warning | Error}]
+       # [-Details <string>]
+# --------------------------------delete me---------------------------------------
+
+
+
+
+# Credits:
+# -------
+#
+# Most of this is by me, @sgeto. But it wouldn't bad been not possible
+# without the help/inspiration of the following people/projects:
+#
+# - The Ettercap Development Team <http://www.ettercap-project.org/>
+
+version: -0.8.3-{build}
+
+# Do not increment build number after pull requests.
+pull_requests:
+  do_not_increment_build_number: true
+
+# Only build the 'master' branch.
+branches:
+  except:
+    - gh-pages
+
+# Skipping commits affecting these files.
+skip_commits:
+  files:
+    - '**/*.README.*'
+    - '**/*.md'
+    - '**/*.png'
+    - '**/*.ico'
+    - '**/*.svg'
+
+init:
+  - ps: |
+      Write-Host -ForegroundColor White -BackgroundColor Blue ("Hello " + $env:APPVEYOR_ACCOUNT_NAME)
+      Write-Host -ForegroundColor White -BackgroundColor Blue "Hope you're having great day."
+      Write-Host -ForegroundColor White -BackgroundColor Blue "You're viewing project $env:APPVEYOR_PROJECT_NAME by $env:APPVEYOR_REPO_COMMIT_AUTHOR ($env:APPVEYOR_REPO_NAME) at "$env:APPVEYOR_REPO_COMMIT" ("$env:APPVEYOR_REPO_COMMIT_MESSAGE")."
+# Carriage returns can be bad
+# XXX - remove?
+  - git config --global core.autocrlf input
+
+# set clone depth
+# XXX - this may back-fire...
+clone_depth: 5
+
+environment:
+  global:
+  # Make debconf use a frontend that expects no interactive input at all,
+  # preventing it from even trying to access stdin
+    DEBIAN_FRONTEND: noninteractive
+    DEBIAN_PRIORITY: critical
+    # Uncomment to disables execution of PowerShell commands on Linux-based
+    # images. I wouldn't blame you if you did.
+    # APPVEYOR_YML_DISABLE_PS_LINUX: true
+    # XXX - set cache dirssss
+    # Update the (vcpkg) cache even if build fails
+    APPVEYOR_SAVE_CACHE_ON_ERROR: true
+    # Enable test output on failure
+    CTEST_OUTPUT_ON_FAILURE: 1
+    # XXX - set %VCPKG_DEFAULT_TRIPLET% (see 'vcpkg help triplet')
+    # VCPKG_DEFAULT_TRIPLET: x64-windows-static
+    enable_debug: true
+    CL: -nologo
+    LINK: -nologo
+    DEV_ARGS: "-Werror=dev -Werror=deprecated -DCMAKE_VERBOSE_MAKEFILE=1"
+
+  matrix:
+  - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+    CMAKE_LINT: True
+    APPVEYOR_SKIP_FINALIZE_ON_EXIT: true
+  - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+    GEN: "Unix Makefiles"
+    GTK: GTK3
+    IPV6: ON
+    SYSTEM_LIBS: ON
+    GTKPKG: libgtk-3-dev
+  - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+    GEN: "Unix Makefiles"
+    GTK: GTK2
+    IPV6: OFF
+    SYSTEM_LIBS: ON
+    GTKPKG: libgtk2.0-dev
+  - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+    GEN: "Unix Makefiles"
+    GTK: GTK3
+    IPV6: ON
+    SYSTEM_LIBS: OFF
+    GTKPKG: libgtk-3-dev
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    GEN: "Visual Studio 15 2017"
+    ARCH: 32
+    VCPKG_DEFAULT_TRIPLET: x86-windows
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    GEN: "Visual Studio 15 2017 Win64"
+    ARCH: 64
+    VCPKG_DEFAULT_TRIPLET: x64-windows
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    GEN: "MSYS Makefiles"
+    ARCH: 32
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    GEN: "MSYS Makefiles"
+    ARCH: 64
+
+matrix:
+  # Immediately finish build if any job fails.
+  # fast_finish: true
+  # XXX - remove me!
+  allow_failures:
+    - ARCH: 32
+    - ARCH: 64
+
+cache:
+# - etterdeps.7z
+  - 'apt_cache'
+  - C:\Tools\vcpkg\downloads
+  - C:\Tools\vcpkg\packages
+  - C:\Tools\vcpkg\installed
+
+# XXX - is sending output to null a good idea in "install"?
+#       The build won't be considered failed if anything fails here.
+# XXX - use apt long commands
+install:
+  - cmd: echo Hey, I'm Windows!
+  - sh: printf "Linux FTW!\n"
+  - ps: |
+      if ($isLinux) {
+        if ($env:CMAKE_LINT) {
+          Write-Host -ForegroundColor White -BackgroundColor Green "This is cmake-lint!"
+          git clone https://github.com/richq/cmake-lint.git
+            if (test-path cmake-lint) {
+              cd cmake-lint
+            } else {
+            throw "Error while cloning (or changing directory to) 'cmake-lint'."
+            }
+          sudo python setup.py install
+          cd ..
+        } else {
+        Write-Host -ForegroundColor White -BackgroundColor Green "This is Linux!"
+        mkdir -p apt_cache/partial
+        sudo apt -qq -o=Dpkg::Use-Pty=0 update
+        sudo apt-get -qq -o "Dpkg::Options::=--force-confdef" -o "Dpkg::Options::=--force-confold" upgrade
+        sudo apt-get -qq -o "Dpkg::Options::=--force-confdef" -o "Dpkg::Options::=--force-confold" -o dir::cache::archives="apt_cache" install bison check cmake flex groff libbsd-dev libcurl4-openssl-dev libltdl-dev libluajit-5.1-dev libncurses5-dev libnet1-dev libpcap-dev libpcre3-dev libssl-dev libgeoip-dev geoip-database libidn11-dev librtmp-dev $env:GTKPKG
+        }
+      } else {
+        Write-Host -ForegroundColor White -BackgroundColor Green "This is NOT Linux!"
+          if ($env:GEN -match "Visual Studio 15 2017") {
+            Write-Host -ForegroundColor White -BackgroundColor Green "Visual Studio 15 2017!"
+            vcpkg update
+            vcpkg install openssl zlib pthreads winpcap
+        } else {
+            Write-Host -ForegroundColor White -BackgroundColor Green "MinGW$env:ARCH!"
+            .\contrib\InstallNpcap.ps1
+          }
+        }
+  # Clone the submodules.
+  - git submodule update --init --recursive
+# XXX - Please ensure you're using the latest portfiles with `.\vcpkg update`
+  # - .\vcpkg update
+
+before_build:
+  - ps: |
+      if ($isLinux) {
+        if ($env:CMAKE_LINT) {
+          Write-Host -ForegroundColor White -BackgroundColor Green "This is cmake-lint!"
+        } else {
+        Write-Host -ForegroundColor White -BackgroundColor Green "This is Linux!"
+        Start-Process -FilePath "uname" -ArgumentList "-a" -NoNewWindow -Wait
+        Write-Host -ForegroundColor White -BackgroundColor Green "No PATH stuff yet..."
+        }
+      } else {
+        Write-Host -ForegroundColor White -BackgroundColor Green "This is NOT Linux!"
+        $env:PATH="c:\msys64\mingw$env:ARCH\bin;c:\msys64\usr\bin;$env:PATH"
+      }
+
+  - ps: |
+      if ($env:APPVEYOR_REPO_TAG -eq "true") {
+        $env:BUILD_TYPE = "RelWithDebInfo"
+      }
+      else {
+        $env:BUILD_TYPE = "Debug"
+      }
+
+  - ps: |
+      if (!$env:CMAKE_LINT) {
+        mkdir build
+        cd build
+        if (($isWindows) -and ($env:GEN -match "Visual Studio 15 2017")) {
+          cmake -G"$env:GEN" "$env:BUILD_ARGS" -DCMAKE_TOOLCHAIN_FILE=c:/Tools/vcpkg/scripts/buildsystems/vcpkg.cmake -DLIBRARY_BUILD=ON ..
+        } else {
+          Write-Host -ForegroundColor White -BackgroundColor Green "This is not Visual Studio!"
+          Write-Host -ForegroundColor White -BackgroundColor Green "CMAKE_BUILD_TYPE = $env:BUILD_TYPE"
+          cmake -G"$env:GEN" "$env:DEV_ARGS" -DGTK_BUILD_TYPE="$env:GTK" -DENABLE_IPV6="$env:IPV6" -DENABLE_LUA=ON -DENABLE_PDF_DOCS=ON -DENABLE_TESTS=ON -DSYSTEM_LIBS="$env:SYSTEM_LIBS" -DCMAKE_BUILD_TYPE="$env:BUILD_TYPE" ..
+        }
+      }
+
+build_script:
+  # - ps: |
+      # sudo cmake --build . --config $env:BUILD_TYPE --target install
+  - ps: |
+      if ($env:CMAKE_LINT) {
+        Write-Host -ForegroundColor White -BackgroundColor Green "This is cmake-lint!"
+        ./misc/cmakelint.sh
+          if ($?) {
+            Write-Host -ForegroundColor White -BackgroundColor Green "cmake-lint passed."
+            Exit-AppveyorBuild
+          } else {
+          throw "cmake-lint error. Please check the above error messages."
+          }
+      } elseif ($env:GEN -match "Visual Studio 15 2017") {
+          cmake -G"$env:GEN" "$env:BUILD_ARGS" -DLIBRARY_BUILD=ON -DCMAKE_BUILD_TYPE=$env:BUILD_TYPE ..
+      } else {
+          Write-Host -ForegroundColor White -BackgroundColor Green "This is Linux!"
+          Write-Host -ForegroundColor White -BackgroundColor Green "GTK_BUILD_TYPE = $env:GTK"
+          Write-Host -ForegroundColor White -BackgroundColor Green "ENABLE_IPV6= $env:IPV6"
+          
+          make
+      }
+
+test_script:
+  - ps: |
+      ctest --output-on-failure --interactive-debug-mode 0 --build-config $env:BUILD_TYPE --verbose
+
+# XXX - add AppVeyor bot
+# XXX - add IRC
+# XXX - can I post on twitter/mailing list if build succeed?
+notifications:
+  - provider: Email
+    to:
+    - '{{commitAuthorEmail}}'
+    on_build_success: false
+    on_build_failure: false
+    on_build_status_changed: true
+  # - provider: GitHubPullRequest
+    # auth_token:
+      # secure: VwyaJwle6Sl0AuOebFpGCIXiPyC2aOZjH0MZe+i8YlFib7AcqvDkbZQUqKbVuHK5
+    # template: "{{#passed}}:white_check_mark:{{/passed}}{{#failed}}:x:{{/failed}} [Build {{&projectName}} {{buildVersion}} {{status}}]({{buildUrl}}) (commit {{commitUrl}} by @{{&commitAuthorUsername}})"
