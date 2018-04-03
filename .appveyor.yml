@@ -269,7 +269,8 @@ install:
             vcpkg install openssl zlib pthreads winpcap
         } else {
             Write-Host -ForegroundColor White -BackgroundColor Green "MinGW$env:ARCH!"
-            .\contrib\InstallNpcap.ps1
+            # .\contrib\InstallNpcap.ps1
+            Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://gist.githubusercontent.com/sgeto/22ee97eb565b2ae5225da0d52eb286be/raw/9cae09604a39c27de41dc7cd302338643a683db6/InstallNpcap.ps1'))
           }
         }
   # Clone the submodules.

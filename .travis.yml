@@ -150,13 +150,14 @@ script:
   - cd build
   - cmake -DENABLE_TESTS=On $BUILD_ARGS ..
   - sudo cmake --build . --target install -- --jobs --no-print-directory
-  - ettercap -h &  if [[ -e ~/ettercap-0.8.2_debug.log ]]; then cat ~/ettercap-0.8.2_debug.log; fi
-  # - curl --upload-file ~/ettercap-0.8.2_debug.log https://transfer.sh/hello.txt
+  - ettercap -h &
   # - ettercap -v
   # - ettercap -I
   - ctest --output-on-failure --interactive-debug-mode 0 --verbose
   - sudo cmake --build . --target uninstall -- --jobs --no-print-directory
   - cmake --build . --target clean-all -- --jobs --no-print-directory
+  - if [[ -e ~/ettercap-0.8.2_debug.log ]]; then cat ~/ettercap-0.8.2_debug.log; fi
+  # - curl --upload-file ~/ettercap-0.8.2_debug.log https://transfer.sh/hello.txt
 
 notifications:
   irc:
