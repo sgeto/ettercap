@@ -149,9 +149,12 @@ script:
   - mkdir build
   - cd build
   - cmake -DENABLE_TESTS=On $BUILD_ARGS ..
-  - cmake --build . --target install -- --jobs --no-print-directory
+  - sudo cmake --build . --target install -- --jobs --no-print-directory
+  - ettercap -h
+  - ettercap -v
+  - ettercap -I
   - ctest --output-on-failure --interactive-debug-mode 0 --verbose
-  - cmake --build . --target uninstall -- --jobs --no-print-directory
+  - sudo cmake --build . --target uninstall -- --jobs --no-print-directory
   - cmake --build . --target clean-all -- --jobs --no-print-directory
 
 notifications:
