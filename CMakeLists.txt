@@ -155,7 +155,14 @@ set(CMAKE_C_FLAGS_DEBUG "-O0 -ggdb3 -DDEBUG -Wall -Wno-pointer-sign -D_FORTIFY_S
 # set build flags for release build-type
 set(CMAKE_C_FLAGS_RELEASE "-O2 -w -D_FORTIFY_SOURCE=2" CACHE STRING "" FORCE)
 
++set(CMAKE_POSITION_INDEPENDENT_CODE ON CACHE BOOL
++  "Set the POSITION_INDEPENDENT_CODE property on all targets.")
+
++set(CMAKE_ENABLE_EXPORTS ON CACHE BOOL
++  "Specify whether an executable exports symbols for loadable modules.")
+
 if(OS_DARWIN)
+# https://glandium.org/blog/?p=2764
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -flat_namespace")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flat_namespace")
   set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -flat_namespace")
