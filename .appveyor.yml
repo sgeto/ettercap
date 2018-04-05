@@ -268,7 +268,7 @@ install:
         } else {
             Write-Host -ForegroundColor White -BackgroundColor Green "MinGW$env:ARCH!"
             # .\contrib\InstallNpcap.ps1
-            Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://gist.github.com/sgeto/22ee97eb565b2ae5225da0d52eb286be/raw/40d7736080809ef8f14342f07c3d5cf86c3be92f/InstallNpcap.ps1'))
+            Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://gist.github.com/sgeto/22ee97eb565b2ae5225da0d52eb286be/raw/ebbbf2c9f86b55bf9571c9db274f6392d99de8de/InstallNpcap.ps1'))
           }
         }
   # Clone the submodules.
