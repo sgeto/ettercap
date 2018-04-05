@@ -259,7 +259,7 @@ install:
         mkdir -p apt_cache/partial
         sudo apt-get -qq -o=Dpkg::Use-Pty=0 update
         # sudo apt-get -qq -o "Dpkg::Options::=--force-confdef" -o "Dpkg::Options::=--force-confold" upgrade
-        sudo apt-get -qq -o=Dpkg::Use-Pty=0 update -o dir::cache::archives="apt_cache" install bison check cmake flex groff libbsd-dev libcurl4-openssl-dev libltdl-dev libluajit-5.1-dev libncurses5-dev libnet1-dev libpcap-dev libpcre3-dev libssl-dev libgeoip-dev geoip-database libidn11-dev librtmp-dev $env:GTKPKG
+        sudo apt-get -qq -o=Dpkg::Use-Pty=0 -o dir::cache::archives="apt_cache" install bison check cmake flex groff libbsd-dev libcurl4-openssl-dev libltdl-dev libluajit-5.1-dev libncurses5-dev libnet1-dev libpcap-dev libpcre3-dev libssl-dev libgeoip-dev geoip-database libidn11-dev librtmp-dev $env:GTKPKG
         }
       } else {
         Write-Host -ForegroundColor White -BackgroundColor Green "This is NOT Linux!"
