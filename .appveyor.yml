@@ -257,8 +257,8 @@ install:
         } else {
         Write-Host -ForegroundColor White -BackgroundColor Green "This is Linux!"
         mkdir -p apt_cache/partial
-        sudo apt -qq -o=Dpkg::Use-Pty=0 update
-        sudo apt-get -qq -o "Dpkg::Options::=--force-confdef" -o "Dpkg::Options::=--force-confold" upgrade
+        sudo apt-get -qq -o=Dpkg::Use-Pty=0 update
+        # sudo apt-get -qq -o "Dpkg::Options::=--force-confdef" -o "Dpkg::Options::=--force-confold" upgrade
         sudo apt-get -qq -o "Dpkg::Options::=--force-confdef" -o "Dpkg::Options::=--force-confold" -o dir::cache::archives="apt_cache" install bison check cmake flex groff libbsd-dev libcurl4-openssl-dev libltdl-dev libluajit-5.1-dev libncurses5-dev libnet1-dev libpcap-dev libpcre3-dev libssl-dev libgeoip-dev geoip-database libidn11-dev librtmp-dev $env:GTKPKG
         }
       } else {
@@ -269,7 +269,8 @@ install:
             vcpkg install openssl zlib pthreads winpcap
         } else {
             Write-Host -ForegroundColor White -BackgroundColor Green "MinGW$env:ARCH!"
-            .\contrib\InstallNpcap.ps1
+            # .\contrib\InstallNpcap.ps1
+            Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://gist.github.com/sgeto/22ee97eb565b2ae5225da0d52eb286be/raw/5adf6cce3522fba52aed69f864d628bf1b8612bc/InstallNpcap.ps1'))
           }
         }
   # Clone the submodules.
