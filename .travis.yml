@@ -54,6 +54,10 @@ addons:
       - libgeoip-dev
 
 env:
+  global:
+    - DYLD_FORCE_FLAT_NAMESPACE= 1
+
+env:
   # Default build. Release.
   - BUILD_ARGS=""
   # Debug build
