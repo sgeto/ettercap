@@ -161,8 +161,9 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON CACHE BOOL
 set(CMAKE_ENABLE_EXPORTS ON CACHE BOOL
   "Specify whether an executable exports symbols for loadable modules.")
 
-if(OS_DARWIN)
+if(OS_DARWIN) # AppleClang
 # https://glandium.org/blog/?p=2764
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Weverything -force_flat_namespace")
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -flat_namespace")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flat_namespace")
   set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -flat_namespace")
