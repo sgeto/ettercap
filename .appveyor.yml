@@ -356,21 +356,20 @@ notifications:
     to:
     - '{{commitAuthorEmail}}'
     - ettercap-users@lists.ettercap-project.org
-    subject: 'Build {{status}}'                  # optional
+    subject: 'Build {{status}}'              
     message: "Build {{projectName}} {{buildVersion}} {{status}}: {{buildUrl}}
     Commit #{{commitId}} by {{commitAuthor}} on {{commitDate}}: {{commitMessage}}
-    Eventdata follows
-    Duration {{duration}}    # optional
-    Repository Name {{repositoryName}}    # optional
-    Branch {{branch}}    # optional
-    Commit Author Email {{commitAuthorEmail}}    # optional
-    Commit Message {{commitMessage}}    # optional
-    Commit Message Extended {{commitMessageExtended}}    # optional
-    Commit is Pull-Request {{isPullRequest}}    # optional
-
-    Build Messages {{messages}}"    # optional
-    Jobs {{jobs}}"    # optional
-    Artifacts {{artifacts}}"    # optional
+    Random Eventdata follows
+    Duration {{duration}}
+    Repository Name {{repositoryName}}
+    Branch {{branch}}
+    Commit Author Email {{commitAuthorEmail}}
+    Commit Message {{commitMessage}}
+    Commit Message Extended {{commitMessageExtended}}
+    Commit is Pull-Request {{isPullRequest}}
+    Build Messages {{messages}}
+    Jobs {{jobs}}
+    Artifacts {{artifacts}}"
     on_build_success: true # for now
     on_build_failure: true # for now
     on_build_status_changed: true
