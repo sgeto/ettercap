@@ -360,7 +360,17 @@ notifications:
     message: "Build {{projectName}} {{buildVersion}} {{status}}: {{buildUrl}}
     Commit #{{commitId}} by {{commitAuthor}} on {{commitDate}}: {{commitMessage}}
     Eventdata follows
-    {{eventData}}"    # optional
+    Duration {{duration}}    # optional
+    Repository Name {{repositoryName}}    # optional
+    Branch {{branch}}    # optional
+    Commit Author Email {{commitAuthorEmail}}    # optional
+    Commit Message {{commitMessage}}    # optional
+    Commit Message Extended {{commitMessageExtended}}    # optional
+    Commit is Pull-Request {{isPullRequest}}    # optional
+
+    Build Messages {{messages}}"    # optional
+    Jobs {{jobs}}"    # optional
+    Artifacts {{artifacts}}"    # optional
     on_build_success: true # for now
     on_build_failure: true # for now
     on_build_status_changed: true
