@@ -167,7 +167,7 @@ if(OS_DARWIN) # AppleClang
 # [ 21%] Linking C shared library libettercap-ui.dylib
 # clang: error: invalid argument '-force_flat_namespace' not allowed with '-dynamiclib'
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Weverything ") #-force_flat_namespace")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-reserved-id-macro -Wno-padded -Wno-gnu-zero-variadic-macro-arguments -Wno-conversion --Wno-unreachable-code-break -Wno-documentation -Wno-documentation-unknown-command")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-reserved-id-macro -Wno-padded -Wno-gnu-zero-variadic-macro-arguments -Wno-conversion -Wno-documentation -Wno-documentation-unknown-command")
 
   # set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -flat_namespace")
   # set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flat_namespace")
