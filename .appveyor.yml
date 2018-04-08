@@ -290,7 +290,7 @@ before_build:
         }
       } else {
         Write-Host -ForegroundColor White -BackgroundColor Green "This is NOT Linux!"
-        $env:PATH="c:\msys64\mingw$env:ARCH\bin;c:\msys64\usr\bin;$env:PATH"
+        $env:path += ";c:\msys64\mingw$env:ARCH\bin;c:\msys64\usr\bin"
       }
 
   - ps: |
@@ -358,7 +358,9 @@ notifications:
     - ettercap-users@lists.ettercap-project.org
     subject: 'Build {{status}}'                  # optional
     message: "Build {{projectName}} {{buildVersion}} {{status}}: {{buildUrl}}
-    Commit #{{commitId}} by {{commitAuthor}} on {{commitDate}}: {{commitMessage}}"    # optional
+    Commit #{{commitId}} by {{commitAuthor}} on {{commitDate}}: {{commitMessage}}
+    Eventdata follows
+    {{eventData}}"    # optional
     on_build_success: true # for now
     on_build_failure: true # for now
     on_build_status_changed: true
