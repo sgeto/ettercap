@@ -1,3 +1,10 @@
++# Only compile lua stuff if lua is enabled!
+if(ENABLE_LUA)
+  add_subdirectory(lua)
+endif()
+
+add_subdirectory(interfaces)
+
 set(EC_SRC
     ec_asn1.c
     ec_mem.c
@@ -187,12 +194,11 @@ if(NOT HAVE_GETOPT_LONG AND NOT HAVE_GETOPT_H)
   set(EC_SRC ${EC_SRC} missing/getopt.c)
 endif()
 
-add_library(lib_ettercap SHARED ${EC_SRC})
+add_library(lib_ettercap ${EC_LUA} ${EC_INTERFACES} ${EC_SRC})
 add_dependencies(lib_ettercap libnet)
-target_link_libraries(lib_ettercap ec_interfaces ${EC_LIBS})
+target_link_libraries(lib_ettercap ${EC_LIBS})
 
 if(NOT LIBRARY_BUILD)
-  add_subdirectory(interfaces)
   include_directories(interfaces/daemon interfaces/text)
   if(ENABLE_CURSES)
     include_directories(interfaces/curses interfaces/curses/widgets)
@@ -205,10 +211,8 @@ if(NOT LIBRARY_BUILD)
   endif()
 endif()
 
-# Only compile lua stuff if lua is enabled!
 if(ENABLE_LUA)
-  add_subdirectory(lua)
-  target_link_libraries(lib_ettercap ec_lua ${LUAJIT_LIBRARY})
+  target_link_libraries(lib_ettercap ${LUAJIT_LIBRARY})
   if(OS_DARWIN AND (CMAKE_SIZEOF_VOID_P EQUAL 8))
     # On 64-bit OSX platforms, luajit requires the following flags to be added.
     # See: http://luajit.org/install.html

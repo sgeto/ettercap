@@ -11,8 +11,8 @@ configure_file(ec_lua_config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/include/ec_lua_
 # Take care of building our C-based stuff.
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 include_directories(${LUAJIT_INCLUDE_DIR})
-add_library(ec_lua ec_lua.c)
-set_target_properties(ec_lua PROPERTIES POSITION_INDEPENDENT_CODE ON)
+add_library(ec_lua OBJECT ec_lua.c)
+set(EC_LUA [=[$<TARGET_OBJECTS:ec_lua>]=] PARENT_SCOPE)
 add_dependencies(ec_lua luajit)
 
 # Add our 'shared' code.
