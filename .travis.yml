@@ -53,9 +53,9 @@ addons:
       - libgtk-3-dev
       - libgeoip-dev
 
-env:
-  global:
-    - DYLD_FORCE_FLAT_NAMESPACE= 1
+# env:
+  # global:
+    # - DYLD_FORCE_FLAT_NAMESPACE= 1
 
 env:
   # Default build. Release.
@@ -153,7 +153,7 @@ script:
   - mkdir build
   - cd build
   - cmake -DENABLE_TESTS=On $BUILD_ARGS ..
-  - sudo cmake --build . --target install -- --jobs --no-print-directory
+  - sudo cmake --build . --target install -- --jobs 4 --no-print-directory
   - ettercap -h &
   # - ettercap -v
   # - ettercap -I
