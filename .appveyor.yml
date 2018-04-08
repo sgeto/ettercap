@@ -130,7 +130,7 @@
 #
 # - The Ettercap Development Team <http://www.ettercap-project.org/>
 
-version: -0.8.3-{build}
+version: 0.8.3-{build}
 
 # Do not increment build number after pull requests.
 pull_requests:
@@ -177,6 +177,8 @@ environment:
     APPVEYOR_SAVE_CACHE_ON_ERROR: true
     # Enable test output on failure
     CTEST_OUTPUT_ON_FAILURE: 1
+    # Run CTest in interactive mode.
+    CTEST_INTERACTIVE_DEBUG_MODE: 0
     # XXX - set %VCPKG_DEFAULT_TRIPLET% (see 'vcpkg help triplet')
     # VCPKG_DEFAULT_TRIPLET: x64-windows-static
     enable_debug: true
@@ -301,8 +303,8 @@ before_build:
 
   - ps: |
       if (!$env:CMAKE_LINT) {
-        mkdir build
-        cd build
+        New-Item "build" -type directory | Out-Null
+        Set-Location .\build\
         if (($isWindows) -and ($env:GEN -match "Visual Studio 15 2017")) {
           cmake -G"$env:GEN" "$env:BUILD_ARGS" -DCMAKE_TOOLCHAIN_FILE=c:/Tools/vcpkg/scripts/buildsystems/vcpkg.cmake -DLIBRARY_BUILD=ON ..
         } else {
@@ -354,8 +356,11 @@ notifications:
     to:
     - '{{commitAuthorEmail}}'
     - ettercap-users@lists.ettercap-project.org
-    on_build_success: false
-    on_build_failure: false
+    subject: 'Build {{status}}'                  # optional
+    message: "Build {{projectName}} {{buildVersion}} {{status}}: {{buildUrl}}
+    Commit #{{commitId}} by {{commitAuthor}} on {{commitDate}}: {{commitMessage}}"    # optional
+    on_build_success: true # for now
+    on_build_failure: true # for now
     on_build_status_changed: true
   # - provider: GitHubPullRequest
     # auth_token:

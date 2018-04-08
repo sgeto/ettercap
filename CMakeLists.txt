@@ -163,7 +163,11 @@ set(CMAKE_ENABLE_EXPORTS ON CACHE BOOL
 
 if(OS_DARWIN) # AppleClang
 # https://glandium.org/blog/?p=2764
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Weverything -force_flat_namespace")
+
+# [ 21%] Linking C shared library libettercap-ui.dylib
+# clang: error: invalid argument '-force_flat_namespace' not allowed with '-dynamiclib'
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Weverything ") #-force_flat_namespace")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-reserved-id-macro -Wno-padded -Wno-gnu-zero-variadic-macro-arguments -Wno-conversion -Wno-documentation -Wno-documentation-unknown-command")
 
   # set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -flat_namespace")
   # set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flat_namespace")
