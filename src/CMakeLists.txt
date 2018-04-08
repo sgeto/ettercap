@@ -158,12 +158,14 @@ elseif(OS_GNU)
   set(EC_SRC ${EC_SRC} os/ec_gnu.c)
 endif()
 
+if(NOT OS_DARWIN)
 if(NOT HAVE_STRLCAT OR NOT HAVE_STRLCAT_FUNCTION)
   set(EC_SRC ${EC_SRC} missing/strlcat.c)
 endif()
 
 if(NOT HAVE_STRLCPY OR NOT HAVE_STRLCPY_FUNCTION)
   set(EC_SRC ${EC_SRC} missing/strlcpy.c)
+endif()
 endif()
 
 if(NOT HAVE_STRSEP)
