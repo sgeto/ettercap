@@ -344,6 +344,8 @@ test_script:
 artifacts:
   - path: 'build/CMakeFiles/*.log'
     name: logs
+  - path: 'build/include/config.h'
+    name: logs
   - path: 'build/Testing/**/*.xml'
     name: test_results
 
