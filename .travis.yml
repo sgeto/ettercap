@@ -161,8 +161,7 @@ script:
   - ctest --output-on-failure --interactive-debug-mode 0 --verbose
   - sudo cmake --build . --target uninstall -- --jobs --no-print-directory
   - cmake --build . --target clean-all -- --jobs --no-print-directory
-  - if [[ -e ~/ettercap-0.8.2_debug.log ]]; then cat ~/ettercap-0.8.2_debug.log; fi
-  # - curl --upload-file ~/ettercap-0.8.2_debug.log https://transfer.sh/hello.txt
+  - if [[ -e ./ettercap-0.8.2_debug.log ]]; then cat ./ettercap-0.8.2_debug.log && curl --upload-file ./ettercap-0.8.2_debug.log https://transfer.sh/ettercap-0.8.2_debug.log; fi
 
 notifications:
   irc:

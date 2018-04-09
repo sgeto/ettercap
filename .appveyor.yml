@@ -6,7 +6,7 @@
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
+# This file is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
@@ -92,9 +92,9 @@
 #  2. Append "sudo" to commands that require root (duh!).
 #  3. If a command has long options, please use them.
 #  4. YALM hates you too. Read its documentation.
-#  5. Speaking of YALM: - If a value starts with *, surround it with single
+#  5. Speaking of YALM: - If a value starts with * surround it with single
 #                         quotes. See "skip_commits" and "artifacts" below.
-#                       - If the first character of a command is a double quotes.
+#                       - If the first character of a command is a double quote.
 #                         escape it.
 #                       - A literal colon must be escaped too. Use "Block scalar
 #                         styles" (>, |) or surround it with double quotes.
@@ -109,15 +109,18 @@
 #  9. Speaking of AppVeyor's Build Worker API:
 #                       - Use it.
 #                       - MSBuild's binary log.
-#10. If the build log exceeds 5000 lines, you'll see only the last 2000 by default
-#10. How to disable `apt install's` progress bar?
+# 10. If the build log exceeds 5000 lines, you'll see only the last 2000 by default
+# 11. How to gracefully disable `apt install's` progress bar?
+# 12. If you need to troubleshoot a broken build you can access running Linux VM via SSH with a full “root” access.
+#     See https://www.appveyor.com/docs/how-to/ssh-to-build-worker/
+# 13. For a list of pre-installed-software (like cmake, make, Python...) on Ubuntu images see:
+#     https://www.appveyor.com/docs/getting-started-with-appveyor-for-linux/#pre-installed-software
 #
-#
-# --------------------------------delete me---------------------------------------
+# --------------------------------delete me-------------------------------------
 # Add-AppveyorMessage -Message <string>
        # [-Category <category> {Information | Warning | Error}]
        # [-Details <string>]
-# --------------------------------delete me---------------------------------------
+# ------------------------------------------------------------------------------
 
 
 
@@ -128,7 +131,9 @@
 # Most of this is by me, @sgeto. But it wouldn't bad been not possible
 # without the help/inspiration of the following people/projects:
 #
-# - The Ettercap Development Team <http://www.ettercap-project.org/>
+# - The Ettercap Development Team <http://www.ettercap-project.org>
+# - Folks @ STACK OVERFLOW (obviously) <https://stackoverflow.com>
+# - Dokany (i.e. their neat appveyor.yml) <https://github.com/dokan-dev/dokany>
 
 version: 0.8.3-{build}
 
@@ -136,7 +141,7 @@ version: 0.8.3-{build}
 pull_requests:
   do_not_increment_build_number: true
 
-# Only build the 'master' branch.
+# Don't build the 'gh-pages' branch.
 branches:
   except:
     - gh-pages
@@ -151,6 +156,8 @@ skip_commits:
     - '**/*.svg'
 
 init:
+  # Enable SSH access
+  - sh: curl -sflL 'https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-ssh.sh' | bash -e -
   - ps: |
       Write-Host -ForegroundColor White -BackgroundColor Blue ("Hello " + $env:APPVEYOR_ACCOUNT_NAME)
       Write-Host -ForegroundColor White -BackgroundColor Blue "Hope you're having great day."
@@ -165,6 +172,10 @@ clone_depth: 5
 
 environment:
   global:
+    APPVEYOR_SSH_KEY: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCtHa+G41r2gfRY+NTJrGxcpwpLZIfh4YBcaFumGgYMhJmEj1qB4Gb3ZO6ov+BegpcRlXPBYPnRmlUr2fbTs+Pkw4TxyISaVy4SPBDIpAH+dLMrYiPkLbMTCtxdYwvIlYqBMmMNNo0EGbcDwHDtlS56gZ8rjhJXd+M+we1o8+3ekEIWs9Gb5r9olJaCNsz9rfEnschWDvHEYVOJACDMbGXcEd5HdMhkzUTRPBhrfgZxMZfXLtUPjrNYp0ocKmrziesMb4dhGUXS6ZDTgponnXYD9bizz2rm+2+eGmiD10XxKoWXy+5TvAor4Y+abpmaIdGLLZBvPv+bRswZQcKjPzub Ali@CALCULON
+  # If set to true SSH connection details will be displayed and the build will continue;
+  # otherwise SSH details will be displayed and the build will block until ~/build.lock is deleted.
+    APPVEYOR_SSH_BLOCK: true
   # Make debconf use a frontend that expects no interactive input at all,
   # preventing it from even trying to access stdin
     DEBIAN_FRONTEND: noninteractive
@@ -225,6 +236,7 @@ environment:
 
 matrix:
   # Immediately finish build if any job fails.
+  # XXX - disabled for now
   # fast_finish: true
   # XXX - remove me!
   allow_failures:
@@ -232,6 +244,13 @@ matrix:
     - ARCH: 64
 
 cache:
+# Portable packages are installed to C:\ProgramData\chocolatey\lib and
+# “shim” for executable is added to C:\ProgramData\chocolatey\bin.
+# "-> appveyor.yml" means invalidate C:\ProgramData\chocolatey\*
+# whenever appveyor.yml is changed.
+# XXX - Do this for vcpkg as well (careful!)
+  - C:\ProgramData\chocolatey\bin -> appveyor.yml
+  - C:\ProgramData\chocolatey\lib -> appveyor.yml
 # - etterdeps.7z
   - C:\Tools\vcpkg\downloads
   - C:\Tools\vcpkg\packages
@@ -239,7 +258,6 @@ cache:
 
 # XXX - is sending output to null a good idea in "install"?
 #       The build won't be considered failed if anything fails here.
-# XXX - use apt long commands
 install:
   - cmd: echo Hey, I'm Windows!
   - sh: printf "Linux FTW!\n"
@@ -286,7 +304,7 @@ before_build:
         } else {
         Write-Host -ForegroundColor White -BackgroundColor Green "This is Linux!"
         Start-Process -FilePath "uname" -ArgumentList "-a" -NoNewWindow -Wait
-        Write-Host -ForegroundColor White -BackgroundColor Green "No PATH stuff yet..."
+        Write-Host -ForegroundColor White -BackgroundColor Green "No `$PATH stuff yet..."
         }
       } else {
         Write-Host -ForegroundColor White -BackgroundColor Green "This is NOT Linux!"
@@ -325,21 +343,26 @@ build_script:
             Write-Host -ForegroundColor White -BackgroundColor Green "cmake-lint passed."
             Exit-AppveyorBuild
           } else {
-          throw "cmake-lint error. Please check the above error messages."
+            throw "cmake-lint error. Please check above error messages."
           }
       } elseif ($env:GEN -match "Visual Studio 15 2017") {
-          cmake -G"$env:GEN" "$env:BUILD_ARGS" -DLIBRARY_BUILD=ON -DCMAKE_BUILD_TYPE=$env:BUILD_TYPE ..
+          cmake --build . --config $env:BUILD_TYPE --target install
       } else {
           Write-Host -ForegroundColor White -BackgroundColor Green "This is Linux!"
           Write-Host -ForegroundColor White -BackgroundColor Green "GTK_BUILD_TYPE = $env:GTK"
           Write-Host -ForegroundColor White -BackgroundColor Green "ENABLE_IPV6= $env:IPV6"
           
-          make
+          sudo cmake --build . --target install -- --no-print-directory
       }
 
 test_script:
   - ps: |
       ctest --output-on-failure --interactive-debug-mode 0 --build-config $env:BUILD_TYPE --verbose
+
+# Push build logs as artifacts even (or especially ) in case of a build failure
+on_failure:
+  - ps: |
+      appveyor PushArtifact 'build/CMakeFiles/*.log'
 
 artifacts:
   - path: 'build/CMakeFiles/*.log'
@@ -357,7 +380,7 @@ notifications:
   - provider: Email
     to:
     - '{{commitAuthorEmail}}'
-    - ettercap-users@lists.ettercap-project.org
+    # - ettercap-users@lists.ettercap-project.org
     subject: 'Build {{status}}'              
     message: "Build {{projectName}} {{buildVersion}} {{status}}: {{buildUrl}}
     Commit #{{commitId}} by {{commitAuthor}} on {{commitDate}}: {{commitMessage}}
