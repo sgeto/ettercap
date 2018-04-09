@@ -260,7 +260,9 @@ cache:
 #       The build won't be considered failed if anything fails here.
 install:
   - cmd: echo Hey, I'm Windows!
+  - cmd: set
   - sh: printf "Linux FTW!\n"
+  - sh: env
   - ps: |
       if ($isLinux) {
         if ($env:CMAKE_LINT) {
@@ -359,10 +361,10 @@ test_script:
   - ps: |
       ctest --output-on-failure --interactive-debug-mode 0 --build-config $env:BUILD_TYPE --verbose
 
-# Push build logs as artifacts even (or especially ) in case of a build failure
+# Push build logs as artifacts even (or especially) in case of a build failure
 on_failure:
   - ps: |
-      Push-AppveyorArtifact build/CMakeFiles/*.log
+      Push-AppveyorArtifact CMakeFiles/*.log
 
 artifacts:
   - path: 'build/CMakeFiles/*.log'
