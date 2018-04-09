@@ -196,7 +196,7 @@ if(NOT HAVE_GETOPT_LONG AND NOT HAVE_GETOPT_H)
   set(EC_SRC ${EC_SRC} missing/getopt.c)
 endif()
 
-add_library(lib_ettercap ${EC_LUA} ${EC_INTERFACES} ${EC_SRC})
+add_library(lib_ettercap SHARED ${EC_LUA} ${EC_INTERFACES} ${EC_SRC})
 add_dependencies(lib_ettercap libnet)
 target_link_libraries(lib_ettercap ${EC_LIBS})
 

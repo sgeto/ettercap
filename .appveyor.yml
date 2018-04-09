@@ -175,7 +175,7 @@ environment:
     APPVEYOR_SSH_KEY: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCtHa+G41r2gfRY+NTJrGxcpwpLZIfh4YBcaFumGgYMhJmEj1qB4Gb3ZO6ov+BegpcRlXPBYPnRmlUr2fbTs+Pkw4TxyISaVy4SPBDIpAH+dLMrYiPkLbMTCtxdYwvIlYqBMmMNNo0EGbcDwHDtlS56gZ8rjhJXd+M+we1o8+3ekEIWs9Gb5r9olJaCNsz9rfEnschWDvHEYVOJACDMbGXcEd5HdMhkzUTRPBhrfgZxMZfXLtUPjrNYp0ocKmrziesMb4dhGUXS6ZDTgponnXYD9bizz2rm+2+eGmiD10XxKoWXy+5TvAor4Y+abpmaIdGLLZBvPv+bRswZQcKjPzub Ali@CALCULON
   # If set to true SSH connection details will be displayed and the build will continue;
   # otherwise SSH details will be displayed and the build will block until ~/build.lock is deleted.
-    APPVEYOR_SSH_BLOCK: true
+    APPVEYOR_SSH_BLOCK: false
   # Make debconf use a frontend that expects no interactive input at all,
   # preventing it from even trying to access stdin
     DEBIAN_FRONTEND: noninteractive
@@ -362,7 +362,7 @@ test_script:
 # Push build logs as artifacts even (or especially ) in case of a build failure
 on_failure:
   - ps: |
-      appveyor PushArtifact 'build/CMakeFiles/*.log'
+      Push-AppveyorArtifact build/CMakeFiles/*.log
 
 artifacts:
   - path: 'build/CMakeFiles/*.log'
@@ -376,6 +376,7 @@ artifacts:
 # XXX - add IRC
 # XXX - can I post on twitter/mailing list if build succeed?
 # template files to use: https://www.appveyor.com/docs/notifications/#webhook-payload-default
+# https://stackoverflow.com/questions/47757094/notification-templating-with-webhooks-default-payload-appveyor
 notifications:
   - provider: Email
     to:
@@ -393,8 +394,14 @@ notifications:
     Commit Message Extended {{commitMessageExtended}}
     Commit is Pull-Request {{isPullRequest}}
     Build Messages {{messages}}
-    Jobs {{jobs}}
-    Artifacts {{artifacts}}"
+    <p>Artifacts</p>
+    <ul>
+    {{#jobs}}
+      {{#artifacts}}
+        <li>{{url}}</li>
+      {{/artifacts}}
+    {{/jobs}}
+    </ul>"
     on_build_success: true # for now
     on_build_failure: true # for now
     on_build_status_changed: true

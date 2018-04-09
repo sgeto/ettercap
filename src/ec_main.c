@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
 {
    /*
     * Alloc the global structures
-    * We can access these structs via the macro in ec_globals.h
+    * We can access these structures via the macro in ec_globals.h
     */
         
    libettercap_init(PROGRAM, EC_VERSION);
@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
 #endif
 
    /* 
-    * always disable the kernel ip forwarding (except when reading from file).
+    * always disable the kernel IP forwarding (except when reading from file).
     * the forwarding will be done by ettercap.
     */
    if(!EC_GBL_OPTIONS->read && !EC_GBL_OPTIONS->unoffensive && !EC_GBL_OPTIONS->only_mitm) {
@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
       if (!EC_GBL_OPTIONS->read)
       	disable_interface_offload();
 #endif
-      /* binds ports and set redirect for ssl wrapper */
+      /* binds ports and set redirect for SSL wrapper */
       if(EC_GBL_SNIFF->type == SM_UNIFIED && EC_GBL_OPTIONS->ssl_mitm)
          ssl_wrap_init();
 
@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
    /* 
     * drop root privileges 
     * we have already opened the sockets with high privileges
-    * we don't need anymore root privs.
+    * we don't need anymore root privileges.
     */
    drop_privs();
 
@@ -161,13 +161,13 @@ int main(int argc, char *argv[])
    /* load the mac-fingerprints */
    manuf_init();
 
-   /* load the tcp-fingerprints */
+   /* load the TCP-fingerprints */
    fingerprint_init();
    
    /* load the services names */
    services_init();
    
-   /* load http known fileds for user/pass */
+   /* load http known fields for user/pass */
    http_fields_init();
 
 #ifdef HAVE_EC_LUA
@@ -187,7 +187,7 @@ int main(int argc, char *argv[])
 /**** INITIALIZATION PHASE TERMINATED ****/
    
    /* 
-    * we are interested only in the mitm attack i
+    * we are interested only in the MITM attack i
     * if entered, this function will not return...
     */
    if (EC_GBL_OPTIONS->only_mitm)
@@ -208,7 +208,7 @@ int main(int argc, char *argv[])
    libettercap_ui_start();
 
 /******************************************** 
- * reached only when the UI is shutted down 
+ * reached only when the UI is shut down 
  ********************************************/
 
    /* Call all the proper stop methods to ensure
