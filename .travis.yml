@@ -12,6 +12,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+# raw log URL:
+# https://api.travis-ci.org/v3/job/"build job no."/log.txt
 
 # See YAML format https://en.wikipedia.org/wiki/YAML
 # See Travis CI (Continuous Integration) https://docs.travis-ci.com/
@@ -144,13 +146,13 @@ matrix:
       env: BUILD_ARGS="-DENABLE_GTK=Off -DENABLE_CURSES=Off"
 
 before_install:
-    - env
     - if [ ${TRAVIS_OS_NAME} = "osx" ]; then brew update; brew install check curl; brew install groff gtk+ gtk+3; brew install libidn libnet; brew install luajit openssl pcre rtmpdump geoip; fi
 before_script:
     - if [ ${TRAVIS_OS_NAME} = "osx" ]; then export BUILD_ARGS="$BUILD_ARGS -DOPENSSL_ROOT_DIR=`brew --prefix openssl`";fi
 
 script:
   - if [[ "$CC" == "gcc" && "${BUILD_ARGS}" = "" ]]; then git clone https://github.com/richq/cmake-lint.git; cd cmake-lint; python setup.py install --user; cd -; ./misc/cmakelint.sh; fi
+  - env
   - mkdir build
   - cd build
   - cmake -DENABLE_TESTS=On $BUILD_ARGS ..

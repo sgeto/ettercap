@@ -116,6 +116,12 @@
 #     See https://www.appveyor.com/docs/how-to/ssh-to-build-worker/
 # 13. For a list of pre-installed-software (like cmake, make, Python...) on Ubuntu images see:
 #     https://www.appveyor.com/docs/getting-started-with-appveyor-for-linux/#pre-installed-software
+# bison is already the newest version (2:3.0.4.dfsg-1).
+# 137geoip-database is already the newest version (20160408-1).
+# 138libltdl-dev is already the newest version (2.4.6-0.1).
+# 139libltdl-dev set to manually installed.
+# 140libncurses5-dev is already the newest version (6.0+20160213-1ubuntu1).
+# 141libssl-dev is already the newest version (1.0.2g-1ubuntu4.11).
 # 14. Fix indentation
 #
 # --------------------------------delete me-------------------------------------
@@ -188,8 +194,8 @@ environment:
     APPVEYOR_SSH_BLOCK: false
   # Make debconf use a frontend that expects no interactive input at all,
   # preventing it from even trying to access stdin
-    DEBIAN_FRONTEND: noninteractive
-    DEBIAN_PRIORITY: critical
+    # DEBIAN_FRONTEND: noninteractive
+    # DEBIAN_PRIORITY: critical
     # Uncomment to disables execution of PowerShell commands on Linux-based
     # images. I wouldn't blame you if you did.
     # APPVEYOR_YML_DISABLE_PS_LINUX: true
