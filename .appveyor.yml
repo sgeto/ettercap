@@ -102,6 +102,7 @@
 #  5. Speaking of posh: - If your editor supports syntax highlighting for
 #                         Powershell, use it. You're welcome.
 #                       - Escape (newline) character with '`'
+#                       - posh is mostly case-insensitive
 #  7. Keep lines below 80 characters.
 # See https://stackoverflow.com/questions/3790454/in-yaml-how-do-i-break-a-string-over-multiple-lines
 #  8. AppVeyor's Build Worker API documentation:
@@ -115,6 +116,7 @@
 #     See https://www.appveyor.com/docs/how-to/ssh-to-build-worker/
 # 13. For a list of pre-installed-software (like cmake, make, Python...) on Ubuntu images see:
 #     https://www.appveyor.com/docs/getting-started-with-appveyor-for-linux/#pre-installed-software
+# 14. Fix indentation
 #
 # --------------------------------delete me-------------------------------------
 # Add-AppveyorMessage -Message <string>
@@ -157,13 +159,21 @@ skip_commits:
 
 init:
   # Enable SSH access
-  - sh: curl -sflL 'https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-ssh.sh' | bash -e -
+  # - sh: curl -sflL 'https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-ssh.sh' | bash -e -
+  - ps: | 
+        if ($isLinux) {
+            # Enable and get SSH details for the current build worker.
+            Start-Process -FilePath "curl" -ArgumentList "-sflL 'https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-ssh.sh'" -NoNewWindow -Wait
+        } else {
+            # Enable and get RDP details for the current build worker.
+            iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+        }
   - ps: |
-      Write-Host -ForegroundColor White -BackgroundColor Blue ("Hello " + $env:APPVEYOR_ACCOUNT_NAME)
-      Write-Host -ForegroundColor White -BackgroundColor Blue "Hope you're having great day."
-      Write-Host -ForegroundColor White -BackgroundColor Blue "You're viewing project $env:APPVEYOR_PROJECT_NAME by $env:APPVEYOR_REPO_COMMIT_AUTHOR ($env:APPVEYOR_REPO_NAME) at "$env:APPVEYOR_REPO_COMMIT" ("$env:APPVEYOR_REPO_COMMIT_MESSAGE")."
-# Carriage returns can be bad
-# XXX - remove?
+        Write-Host -ForegroundColor White -BackgroundColor Blue ("Hello " + $env:APPVEYOR_ACCOUNT_NAME)
+        Write-Host -ForegroundColor White -BackgroundColor Blue "Hope you're having great day."
+        Write-Host -ForegroundColor White -BackgroundColor Blue "You're viewing project $env:APPVEYOR_PROJECT_NAME by $env:APPVEYOR_REPO_COMMIT_AUTHOR ($env:APPVEYOR_REPO_NAME) at "$env:APPVEYOR_REPO_COMMIT" ("$env:APPVEYOR_REPO_COMMIT_MESSAGE")."
+    # Carriage returns can be bad
+    # XXX - remove?
   - git config --global core.autocrlf input
 
 # set clone depth
@@ -277,9 +287,9 @@ install:
           cd ..
         } else {
         Write-Host -ForegroundColor White -BackgroundColor Green "This is Linux!"
-        sudo apt-get -qq update
+        # sudo apt-get -qq update
         # sudo apt-get -qq upgrade
-        sudo apt-get -qq install bison check cmake flex groff libbsd-dev libcurl4-openssl-dev libltdl-dev libluajit-5.1-dev libncurses5-dev libnet1-dev libpcap-dev libpcre3-dev libssl-dev libgeoip-dev geoip-database libidn11-dev librtmp-dev $env:GTKPKG
+        DEBIAN_FRONTEND: noninteractive; sudo apt-get -q -y install bison check cmake flex groff libbsd-dev libcurl4-openssl-dev libltdl-dev libluajit-5.1-dev libncurses5-dev libnet1-dev libpcap-dev libpcre3-dev libssl-dev libgeoip-dev geoip-database libidn11-dev librtmp-dev $env:GTKPKG
         }
       } else {
         Write-Host -ForegroundColor White -BackgroundColor Green "This is NOT Linux!"
@@ -364,7 +374,23 @@ test_script:
 # Push build logs as artifacts even (or especially) in case of a build failure
 on_failure:
   - ps: |
-      Push-AppveyorArtifact CMakeFiles/*.log
+      Push-AppveyorArtifact "CMakeFiles/*.log"
+  - ps: |
+        # Enable this only when the build was executed by the "RE-BUILD COMMIT"
+        # button on the AppVeyor web interface.
+        if($env:APPVEYOR_RE_BUILD) {
+            if ($isLinux) {
+                # To investigate worker via SSH on build failure, pause/block the
+                # build until either ~/build.lock is deleted and/or the overall
+                # build time (60 min) is exceeded.
+                Set-AppveyorBuildVariable -Name APPVEYOR_SSH_BLOCK -Value $true
+            } else {
+                # To investigate worker via RDP on build failure, pause the build
+                # until a special “lock” file on the VM desktop is deleted and/or
+                # the overall build time (60 min) is exceeded.
+                $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+            }
+        }
 
 artifacts:
   - path: 'build/CMakeFiles/*.log'
