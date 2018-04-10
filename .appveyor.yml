@@ -164,13 +164,13 @@ skip_commits:
     - '**/*.svg'
 
 init:
-  # Enable SSH access
-  # - sh: curl -sflL 'https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-ssh.sh' | bash -e -
+    # Enable and get SSH details for the current build worker.
+  - sh: curl -sflL 'https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-ssh.sh' | bash -e -
   - ps: | 
-        if($isLinux) {
+        if($isWindows) {
             # Enable and get SSH details for the current build worker.
-            Start-Process -FilePath "curl" -ArgumentList "-sflL 'https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-ssh.sh'" -NoNewWindow -Wait
-        } else {
+            # Start-Process -FilePath "curl" -ArgumentList "-sflL 'https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-ssh.sh'" -NoNewWindow -Wait
+        # } else {
             # Enable and get RDP details for the current build worker.
             iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
         }
@@ -194,8 +194,6 @@ environment:
     APPVEYOR_SSH_BLOCK: false
   # Make debconf use a frontend that expects no interactive input at all,
   # preventing it from even trying to access stdin
-    # DEBIAN_FRONTEND: noninteractive
-    # DEBIAN_PRIORITY: critical
     # Uncomment to disables execution of PowerShell commands on Linux-based
     # images. I wouldn't blame you if you did.
     # APPVEYOR_YML_DISABLE_PS_LINUX: true
@@ -276,9 +274,7 @@ cache:
 #       The build won't be considered failed if anything fails here.
 install:
   - cmd: echo "Hey, I'm Windows!"
-  - cmd: set
   - sh: printf "Linux FTW!\n"
-  - sh: env
   - ps: |
         if($isLinux) {
             if($env:CMAKE_LINT) {
