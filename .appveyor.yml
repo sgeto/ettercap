@@ -161,7 +161,7 @@ init:
   # Enable SSH access
   # - sh: curl -sflL 'https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-ssh.sh' | bash -e -
   - ps: | 
-        if ($isLinux) {
+        if($isLinux) {
             # Enable and get SSH details for the current build worker.
             Start-Process -FilePath "curl" -ArgumentList "-sflL 'https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-ssh.sh'" -NoNewWindow -Wait
         } else {
@@ -269,39 +269,39 @@ cache:
 # XXX - is sending output to null a good idea in "install"?
 #       The build won't be considered failed if anything fails here.
 install:
-  - cmd: echo Hey, I'm Windows!
+  - cmd: echo "Hey, I'm Windows!"
   - cmd: set
   - sh: printf "Linux FTW!\n"
   - sh: env
   - ps: |
-      if ($isLinux) {
-        if ($env:CMAKE_LINT) {
-          Write-Host -ForegroundColor White -BackgroundColor Green "This is cmake-lint!"
-          git clone https://github.com/richq/cmake-lint.git
-            if (test-path cmake-lint) {
-              cd cmake-lint
+        if($isLinux) {
+            if($env:CMAKE_LINT) {
+                Write-Host -ForegroundColor Black -BackgroundColor Green "This is cmake-lint!"
+                git clone https://github.com/richq/cmake-lint.git
+                if(test-path cmake-lint) {
+                    cd cmake-lint
+                } else {
+                    throw "Error while cloning (or changing directory to) 'cmake-lint'."
+                }
+                sudo python setup.py install
+                cd ..
             } else {
-            throw "Error while cloning (or changing directory to) 'cmake-lint'."
+                Write-Host -ForegroundColor Black -BackgroundColor Green "This is Linux!"
+                # sudo apt-get -qq update
+                # sudo apt-get -qq upgrade
+                $DEBIAN_FRONTEND = noninteractive; sudo apt-get -q -y install bison check cmake flex groff libbsd-dev libcurl4-openssl-dev libltdl-dev libluajit-5.1-dev libncurses5-dev libnet1-dev libpcap-dev libpcre3-dev libssl-dev libgeoip-dev geoip-database libidn11-dev librtmp-dev $env:GTKPKG
             }
-          sudo python setup.py install
-          cd ..
         } else {
-        Write-Host -ForegroundColor White -BackgroundColor Green "This is Linux!"
-        # sudo apt-get -qq update
-        # sudo apt-get -qq upgrade
-        DEBIAN_FRONTEND: noninteractive; sudo apt-get -q -y install bison check cmake flex groff libbsd-dev libcurl4-openssl-dev libltdl-dev libluajit-5.1-dev libncurses5-dev libnet1-dev libpcap-dev libpcre3-dev libssl-dev libgeoip-dev geoip-database libidn11-dev librtmp-dev $env:GTKPKG
-        }
-      } else {
-        Write-Host -ForegroundColor White -BackgroundColor Green "This is NOT Linux!"
-          if ($env:GEN -match "Visual Studio 15 2017") {
-            Write-Host -ForegroundColor White -BackgroundColor Green "Visual Studio 15 2017!"
-            vcpkg update
-            vcpkg install openssl zlib pthreads winpcap
-        } else {
-            Write-Host -ForegroundColor White -BackgroundColor Green "MinGW$env:ARCH!"
-            # .\contrib\InstallNpcap.ps1
-            Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://github.com/sgeto/InstallNpcap/raw/master/InstallNpcap.ps1'))
-          }
+            Write-Host -ForegroundColor Black -BackgroundColor Green "This is NOT Linux!"
+            if($env:GEN -match "Visual Studio 15 2017") {
+                Write-Host -ForegroundColor Black -BackgroundColor Green "Visual Studio 15 2017!"
+                vcpkg update
+                vcpkg install openssl zlib pthreads winpcap
+            } else {
+                Write-Host -ForegroundColor Black -BackgroundColor Green "MinGW$env:ARCH!"
+                # .\contrib\InstallNpcap.ps1
+                Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://github.com/sgeto/InstallNpcap/raw/master/InstallNpcap.ps1'))
+            }
         }
   # Clone the submodules.
   - git submodule update --init --recursive
@@ -310,21 +310,21 @@ install:
 
 before_build:
   - ps: |
-      if ($isLinux) {
-        if ($env:CMAKE_LINT) {
-          Write-Host -ForegroundColor White -BackgroundColor Green "This is cmake-lint!"
+        if($isLinux) {
+            if($env:CMAKE_LINT) {
+                Write-Host -ForegroundColor Black -BackgroundColor Green "This is cmake-lint!"
+            } else {
+                Write-Host -ForegroundColor Black -BackgroundColor Green "This is Linux!"
+                Start-Process -FilePath "uname" -ArgumentList "-a" -NoNewWindow -Wait
+                Write-Host -ForegroundColor Black -BackgroundColor Green "No `$PATH stuff yet..."
+            }
         } else {
-        Write-Host -ForegroundColor White -BackgroundColor Green "This is Linux!"
-        Start-Process -FilePath "uname" -ArgumentList "-a" -NoNewWindow -Wait
-        Write-Host -ForegroundColor White -BackgroundColor Green "No `$PATH stuff yet..."
+            Write-Host -ForegroundColor Black -BackgroundColor Green "This is NOT Linux!"
+            $env:path += ";c:\msys64\mingw$env:ARCH\bin;c:\msys64\usr\bin"
         }
-      } else {
-        Write-Host -ForegroundColor White -BackgroundColor Green "This is NOT Linux!"
-        $env:path += ";c:\msys64\mingw$env:ARCH\bin;c:\msys64\usr\bin"
-      }
 
   - ps: |
-      if ($env:APPVEYOR_REPO_TAG -eq "true") {
+      if($env:APPVEYOR_REPO_TAG -eq "true") {
         $env:BUILD_TYPE = "RelWithDebInfo"
       }
       else {
@@ -332,14 +332,14 @@ before_build:
       }
 
   - ps: |
-      if (!$env:CMAKE_LINT) {
+      if(!$env:CMAKE_LINT) {
         New-Item "build" -type directory | Out-Null
         Set-Location .\build\
-        if (($isWindows) -and ($env:GEN -match "Visual Studio 15 2017")) {
+        if(($isWindows) -and ($env:GEN -match "Visual Studio 15 2017")) {
           cmake -G"$env:GEN" "$env:BUILD_ARGS" -DCMAKE_TOOLCHAIN_FILE=c:/Tools/vcpkg/scripts/buildsystems/vcpkg.cmake -DLIBRARY_BUILD=ON ..
         } else {
-          Write-Host -ForegroundColor White -BackgroundColor Green "This is not Visual Studio!"
-          Write-Host -ForegroundColor White -BackgroundColor Green "CMAKE_BUILD_TYPE = $env:BUILD_TYPE"
+          Write-Host -ForegroundColor Black -BackgroundColor Green "This is not Visual Studio!"
+          Write-Host -ForegroundColor Black -BackgroundColor Green "CMAKE_BUILD_TYPE = $env:BUILD_TYPE"
           cmake -G"$env:GEN" "$env:DEV_ARGS" -DGTK_BUILD_TYPE="$env:GTK" -DENABLE_IPV6="$env:IPV6" -DENABLE_LUA=ON -DENABLE_PDF_DOCS=ON -DENABLE_TESTS=ON -DSYSTEM_LIBS="$env:SYSTEM_LIBS" -DCMAKE_BUILD_TYPE="$env:BUILD_TYPE" ..
         }
       }
@@ -348,38 +348,38 @@ build_script:
   # - ps: |
       # sudo cmake --build . --config $env:BUILD_TYPE --target install
   - ps: |
-      if ($env:CMAKE_LINT) {
-        Write-Host -ForegroundColor White -BackgroundColor Green "This is cmake-lint!"
-        ./misc/cmakelint.sh
-          if ($?) {
-            Write-Host -ForegroundColor White -BackgroundColor Green "cmake-lint passed."
-            Exit-AppveyorBuild
-          } else {
-            throw "cmake-lint error. Please check above error messages."
-          }
-      } elseif ($env:GEN -match "Visual Studio 15 2017") {
-          cmake --build . --config $env:BUILD_TYPE --target install
-      } else {
-          Write-Host -ForegroundColor White -BackgroundColor Green "This is Linux!"
-          Write-Host -ForegroundColor White -BackgroundColor Green "GTK_BUILD_TYPE = $env:GTK"
-          Write-Host -ForegroundColor White -BackgroundColor Green "ENABLE_IPV6= $env:IPV6"
+        if($env:CMAKE_LINT) {
+            Write-Host -ForegroundColor Black -BackgroundColor Green "This is cmake-lint!"
+            ./misc/cmakelint.sh
+            if($?) {
+                Write-Host -ForegroundColor Black -BackgroundColor Green "cmake-lint passed."
+                Exit-AppveyorBuild
+            } else {
+                throw "cmake-lint error. Please check above error messages."
+            }
+        } elseif($env:GEN -match "Visual Studio 15 2017") {
+            cmake --build . --config $env:BUILD_TYPE --target install
+        } else {
+            Write-Host -ForegroundColor Black -BackgroundColor Green "This is Linux!"
+            Write-Host -ForegroundColor Black -BackgroundColor Green "GTK_BUILD_TYPE = $env:GTK"
+            Write-Host -ForegroundColor Black -BackgroundColor Green "ENABLE_IPV6= $env:IPV6"
           
-          sudo cmake --build . --target install -- --no-print-directory
-      }
+            sudo cmake --build . --target install -- --no-print-directory
+        }
 
 test_script:
   - ps: |
-      ctest --output-on-failure --interactive-debug-mode 0 --build-config $env:BUILD_TYPE --verbose
+        ctest --output-on-failure --interactive-debug-mode 0 --build-config $env:BUILD_TYPE --verbose
 
 # Push build logs as artifacts even (or especially) in case of a build failure
 on_failure:
   - ps: |
-      Push-AppveyorArtifact "CMakeFiles/*.log"
+        Push-AppveyorArtifact "CMakeFiles/*.log"
   - ps: |
         # Enable this only when the build was executed by the "RE-BUILD COMMIT"
         # button on the AppVeyor web interface.
         if($env:APPVEYOR_RE_BUILD) {
-            if ($isLinux) {
+            if($isLinux) {
                 # To investigate worker via SSH on build failure, pause/block the
                 # build until either ~/build.lock is deleted and/or the overall
                 # build time (60 min) is exceeded.
